@@ -50,7 +50,7 @@ export const queryAvailablePerspectives = gql`
 
 const uploadPerspective = gql`
   mutation uploadPerspective($id: LingvodocID!, $debugFlag: Boolean) {
-    tsakorpus(perspective_id: $id, debug_flag: $debugFlag) {
+    tsakorpus(perspective_id: $id, force: true, debug_flag: $debugFlag) {
       triumph
     }
   }
