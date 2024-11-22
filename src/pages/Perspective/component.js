@@ -950,7 +950,10 @@ const Tools = ({
   } = data;
 
   const isMorphology = ({ field: { translations: tt } }) =>
-    Object.values(tt).some(t => t.toLowerCase().includes("affix") || t.toLowerCase().includes("аффикс"));
+    Object.values(tt).some(t => t.toLowerCase().includes("affix") ||
+                                t.toLowerCase().includes("аффикс") ||
+                                t.toLowerCase().includes("morph") ||
+                                t.toLowerCase().includes("морф"));
   const glottMode = columns.some(isMorphology) ? "morphology" : "swadesh";
   const glottMenu = columns.some(isMorphology) ? "Morphology distance" : "Glottochronology (Swadesh-Starostin)";
   const published = english_status === "Published" || english_status === "Limited access";
