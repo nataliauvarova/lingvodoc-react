@@ -10,6 +10,8 @@ export const RESET_SORT_MODE = "@data/perspective/RESET_SORT_MODE";
 export const SET_ORDERED_SORT_MODE = "@data/perspective/SET_ORDERED_SORT_MODE";
 export const RESET_ORDERED_SORT_MODE = "@data/perspective/RESET_ORDERED_SORT_MODE";
 export const ADD_LEXICAL_ENTRY = "@data/perspective/ADD_LEXICAL_ENTRY";
+export const REMOVE_ADDED_LEXES = "@data/perspective/REMOVE_ADDED_LEXES";
+export const RESET_ADDED_LEXES = "@data/perspective/RESET_ADDED_LEXES";
 export const SELECT_LEXICAL_ENTRY = "@data/perspective/SELECT_LEXICAL_ENTRY";
 export const RESET_ENTRIES_SELECTION = "@data/perspective/RESET_ENTRIES_SELECTION";
 
@@ -23,10 +25,10 @@ function params(state = {}, action = {}) {
   }
 }
 
-function filter(state = "", action = {}) {
-  switch (action.type) {
+function filter(state = { value: "", isCaseSens: true, isRegexp: false }, { type, payload }) {
+  switch (type) {
     case SET_FILTER:
-      return action.payload;
+      return payload;
     default:
       return state;
   }
@@ -58,6 +60,10 @@ function createdEntries(state = [], { type, payload }) {
   switch (type) {
     case ADD_LEXICAL_ENTRY:
       return [payload, ...state];
+    case REMOVE_ADDED_LEXES:
+      return state.filter(s => !payload.find(p_id => isEqual(s.id, p_id)));
+    case RESET_ADDED_LEXES:
+      return [];
     default:
       return state;
   }
@@ -121,6 +127,14 @@ export function resetOrderedSortByField() {
 
 export function addLexicalEntry(entry) {
   return { type: ADD_LEXICAL_ENTRY, payload: entry };
+}
+
+export function removeAddedLexes(ids) {
+  return { type: REMOVE_ADDED_LEXES, payload: ids };
+}
+
+export function resetAddedLexes(entry) {
+  return { type: RESET_ADDED_LEXES, payload: null };
 }
 
 export function selectLexicalEntry(id, checked) {

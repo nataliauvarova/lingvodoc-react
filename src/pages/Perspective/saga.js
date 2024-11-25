@@ -5,6 +5,9 @@ import { request, selectors, SET_FILTER } from "ducks/perspective";
 
 export function* updateForFilter({ payload: filter }) {
   const { params } = yield select(selectors.getPerspective);
+  if (filter.value.length) {
+    params.page = 1;
+  }
   yield put(request({ ...params, filter }, true));
 }
 

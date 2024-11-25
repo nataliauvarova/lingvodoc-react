@@ -4,13 +4,13 @@ import { Route, Routes } from "react-router-dom";
 // eslint-disable-next-line import/no-unresolved
 import config from "config";
 import AuthorsRoute from "pages/AuthorsRoute";
+import CorpImport from "pages/CorpImport";
 import { CreateCorpus, CreateDictionary } from "pages/CreateDictionary";
 import { CorpusDashboard, DictionaryDashboard, ParallelCorporaDashboard } from "pages/Dashboard";
 import DashboardRoute from "pages/DashboardRoute";
 import Desktop from "pages/Desktop";
 import DialeqtImport from "pages/DialeqtImport";
 import DictImport from "pages/DictImport";
-import CorpImport from "pages/CorpImport";
 import DictionariesAll from "pages/DictionariesAll";
 import DistanceMap from "pages/DistanceMap";
 import MapSelectedLanguages from "pages/DistanceMap/map";
@@ -24,6 +24,7 @@ import GrantsRoute from "pages/GrantsRoute";
 import Info from "pages/Info";
 import Languages from "pages/Languages";
 import LanguagesDatabasesRoute from "pages/LanguagesDatabasesRoute";
+import ListCognates from "pages/ListCognates";
 import Map from "pages/Map";
 import NotFound from "pages/NotFound";
 import Organizations from "pages/Organizations";
@@ -34,6 +35,7 @@ import SupportRoute from "pages/SupportRoute";
 import ToolsRoute from "pages/ToolsRoute";
 import TopSectionSelector from "pages/TopSectionSelector";
 import Valency from "pages/Valency";
+import Adverb from "pages/Adverb";
 import VersionRoute from "pages/VersionRoute";
 import WithoutGrants from "pages/WithoutGrants";
 
@@ -77,6 +79,8 @@ const AppRoutes = () => (
     <Route path="/docx2eaf" element={<Docx2Eaf />} />
     <Route path="/docx2xlsx" element={<Docx2Xlsx />} />
     <Route path="/valency" element={<Valency />} />
+    <Route path="/adverb" element={<Adverb />} />
+    <Route path="/list_cognates" element={<ListCognates />} />
     <Route element={<NotFound />} />
   </Routes>
 );

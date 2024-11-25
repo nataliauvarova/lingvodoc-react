@@ -38,6 +38,7 @@ import PerspectivePath from "./PerspectivePath";
 
 import "../../components/CognateAnalysisModal/style.scss";
 import "./style.scss";
+import { useSearchParams } from "react-router-dom";
 
 export const perspectiveIsHiddenOrDeletedQuery = gql`
   query perspectiveIsHiddenOrDeleted($id: LingvodocID!) {
@@ -113,7 +114,7 @@ const toolsQuery = gql`
       edit_check: role_check(subject: "perspective", action: "edit")
       columns {
         field {
-          english_translation: translation(locale_id: 2)
+          translations
         }
       }
     }
@@ -948,7 +949,11 @@ const Tools = ({
     }
   } = data;
 
-  const isMorphology = ({ field: { english_translation: field_name } }) => field_name.toLowerCase().includes("affix");
+  const isMorphology = ({ field: { translations: tt } }) =>
+    Object.values(tt).some(t => t.toLowerCase().includes("affix") ||
+                                t.toLowerCase().includes("аффикс") ||
+                                t.toLowerCase().includes("morph") ||
+                                t.toLowerCase().includes("морф"));
   const glottMode = columns.some(isMorphology) ? "morphology" : "swadesh";
   const glottMenu = columns.some(isMorphology) ? "Morphology distance" : "Glottochronology (Swadesh-Starostin)";
   const published = english_status === "Published" || english_status === "Limited access";
@@ -1060,7 +1065,9 @@ const Tools = ({
 };
 
 const handlers = compose(
-  withState("value", "updateValue", props => props.filter),
+  withState("value", "updateValue", props => props.filter.value),
+  withState("isCaseSens", "setCaseSens", true),
+  withState("isRegexp", "setRegexp", false),
   withHandlers({
     onChange(props) {
       return event => props.updateValue(event.target.value);
@@ -1068,13 +1075,19 @@ const handlers = compose(
     onSubmit(props) {
       return event => {
         event.preventDefault();
-        props.submitFilter(props.value);
+        props.submitFilter(props.value, props.isCaseSens, props.isRegexp);
       };
+    },
+    onToggleCaseSens(props) {
+      return (e, { checked }) => props.setCaseSens(checked);
+    },
+    onToggleRegexp(props) {
+      return (e, { checked }) => props.setRegexp(checked);
     }
   })
 );
 
-const Filter = handlers(({ value, onChange, onSubmit }) => {
+const Filter = handlers(({ value, onChange, onSubmit, isCaseSens, onToggleCaseSens, isRegexp, onToggleRegexp }) => {
   const getTranslation = useContext(TranslationContext);
 
   return (
@@ -1084,35 +1097,32 @@ const Filter = handlers(({ value, onChange, onSubmit }) => {
         <button type="submit" className="white">
           <i className="search link icon" />
         </button>
+        <div className="lingvo-search-entities__checkboxes">
+          <Checkbox
+            label={getTranslation("A≠a")}
+            checked={isCaseSens}
+            onChange={onToggleCaseSens}
+            className="lingvo-checkbox_labeled"
+          />
+          <Checkbox
+            label={getTranslation("a.*")}
+            checked={isRegexp}
+            onChange={onToggleRegexp}
+            className="lingvo-checkbox_labeled"
+          />
+        </div>
       </form>
     </div>
   );
 });
 
-const tsakorpusIdStrSet = {
-  "3796,6": null,
-  "4222,7": null,
-  "3235,7": null,
-  "4083,7": null,
-  "3421,8": null,
-  "3648,8": null,
-  "3814,9": null,
-  "3872,9": null,
-  "5180,9": null,
-  "3428,9": null,
-  "4448,9": null,
-  "4830,11": null,
-  "5039,22": null,
-  "4830,27": null,
-  "4473,32": null,
-  "4443,37": null,
-  "5124,45": null,
-  "4447,99": null,
-  "4447,130": null,
-  "3539,769": null,
-  "3391,9437": null,
-  "4084,86722": null
-};
+const uploadPerspective = gql`
+  mutation uploadPerspective($id: LingvodocID!, $debugFlag: Boolean) {
+    tsakorpus(perspective_id: $id, debug_flag: $debugFlag) {
+      triumph
+    }
+  }
+`;
 
 const ModeSelector = compose(
   connect(state => state.user),
@@ -1132,6 +1142,11 @@ const ModeSelector = compose(
     user
   }) => {
     const getTranslation = useContext(TranslationContext);
+
+    const [runUploadPerspective, {data, error, loading}] = (
+      useMutation(uploadPerspective, { variables: { id } }));
+
+    useEffect(() => { runUploadPerspective(); }, []);
 
     const modes = {};
     if (user.id !== undefined) {
@@ -1166,8 +1181,6 @@ const ModeSelector = compose(
       }
     });
 
-    const tsakorpusFlag = tsakorpusIdStrSet.hasOwnProperty(id2str(id));
-
     return (
       <Menu tabular className="lingvo-perspective-menu">
         {map(modes, (info, stub) => (
@@ -1176,10 +1189,19 @@ const ModeSelector = compose(
             {info.component === PerspectiveView ? <Counter id={id} mode={info.entitiesMode} /> : null}
           </Menu.Item>
         ))}
-        {tsakorpusFlag && (
-          <Menu.Item key="corpus_search" href={`http://83.149.198.78:8080/${id[0]}_${id[1]}/search`}>
-            {getTranslation("Corpus search")}
-          </Menu.Item>
+        { (loading || (!error && data && data.tsakorpus.triumph)) && (
+          <Menu.Item
+            key="corpus_search"
+            onClick={() => !loading && window.open(`http://83.149.198.78/${id[0]}_${id[1]}/search`, "_blank")}
+            content={
+              loading ? (
+                <span>
+                  {getTranslation("Uploading")}... <Icon name="spinner" loading />
+                </span>
+              ) : (
+                getTranslation("Corpus search")
+            )}
+          />
         )}
         <Tools
           id={id}
@@ -1192,7 +1214,10 @@ const ModeSelector = compose(
           launchValency={launchValency}
         />
         <Menu.Menu position="right">
-          <Filter filter={filter} submitFilter={submitFilter} />
+          <Filter
+            filter={filter}
+            submitFilter={submitFilter}
+          />
         </Menu.Menu>
       </Menu>
     );
@@ -1248,6 +1273,9 @@ const Perspective = ({
     init({ location });
   }, [init, location]);
 
+  // Renewing filter on every opened perspective
+  useEffect(() => { submitFilter("", true, false) }, []);
+
   const [dndProvider, setDndProvider] = useState(true);
 
   const disableDNDProvider = useCallback(() => {
@@ -1259,6 +1287,15 @@ const Perspective = ({
   }, [dndProvider]);
 
   const { id, parent_id, mode, page, baseUrl } = perspective.params;
+  const { value: filter } = perspective.filter;
+
+  const [searchParams, _] = useSearchParams();
+  const urlPageParam = parseInt(searchParams.get("page"));
+  const urlPage = isNaN(urlPageParam) ? 1 : urlPageParam;
+
+  const [activePage, setActivePage] = useState(page);
+  useEffect(() => setActivePage(page), [page, filter]);
+
   if (!baseUrl || location.pathname.indexOf(baseUrl) === -1) {
     return null;
   }
@@ -1348,7 +1385,9 @@ const Perspective = ({
             mode={mode}
             id={id}
             baseUrl={baseUrl}
-            filter={perspective.filter}
+            filter={filter}
+            isCaseSens={perspective.filter.isCaseSens}
+            isRegexp={perspective.filter.isRegexp}
             submitFilter={submitFilter}
             openCognateAnalysisModal={openCognateAnalysisModal}
             openPhonemicAnalysisModal={openPhonemicAnalysisModal}
@@ -1369,10 +1408,13 @@ const Perspective = ({
                     id={id}
                     mode={mode}
                     entitiesMode={info.entitiesMode}
-                    page={page}
-                    filter={perspective.filter}
+                    page={filter.length ? activePage : urlPage}
+                    filter={filter}
+                    isCaseSens={perspective.filter.isCaseSens}
+                    isRegexp={perspective.filter.isRegexp}
                     className="content"
                     activeDndProvider={dndProvider}
+                    changePage={newPage => setActivePage(newPage)}
                   />
                 }
               />
