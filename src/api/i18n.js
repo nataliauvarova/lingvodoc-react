@@ -452,6 +452,7 @@ export const stringsToTranslate = [
   "iterative",
   "Ivannikov Institute for System Programming of the Russian Academy of Sciences",
   "Join",
+  "Join markups",
   "Keep",
   "Keep skipped vowel interval characters",
   "Language",
