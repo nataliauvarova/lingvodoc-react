@@ -6,8 +6,39 @@ import { Button, Checkbox } from "semantic-ui-react";
 import { find, isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
+import { patienceDiff } from "utils/patienceDiff";
+import { useMutation } from "hooks";
 
 import Entities from "./index";
+
+const updateMarkupsMutation = gql`
+  mutation updateMarkups($entityId: LingvodocID!, $result: [[Int]]!, $groupsToDelete: [Int]) {
+    update_markups(id: $entityId, result: $result, groups_to_delete: $groupsToDelete) {
+      triumph
+    }
+  }
+`;
+
+const createMarkupGroupMutation = gql`
+  mutation createMarkupGroup($type: String!, $author: LingvodocID!) {
+    create_markup_group(type: $type, author: $author) {
+      group_id
+      triumph
+    }
+  }
+`;
+
+const getMarkupGroupsQuery = gql`
+  query getMarkupGroups($perspectiveId: LingvodocID!, $type: String, $author: LingvodocID) {
+    get_markup_groups(id: $perspectiveId, type: $type, author: $author) {
+      left_text
+      right_text
+      type
+      author
+      created_at
+    }
+  }
+`;
 
 const TextEntityContent = ({
   entry,
@@ -40,6 +71,104 @@ const TextEntityContent = ({
   const [is_number, setIsNumber] = useState(is_order_column);
 
   const [dropped, setDropped] = useState(null);
+
+  const [markups, setMarkups] = useState(entity.additional_metadata?.get('markups') || []);
+  const [marking, setMarking] = useState(false);
+  const [browserSelection, setBrowserSelection] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
+  const getTranslation = useContext(TranslationContext);
+
+  const [updateMarkups] = useMutation(updateMarkupsMutation, { onCompleted: () => refetch() });
+
+  const selectMarkups() = useCallback(() => {
+
+    if (!browserSelection) {
+      return { result: markups, action: null, groupsToDelete: null };
+    }
+
+    const startSelection = browserSelection.startOffset;
+    const endSelection = browserSelection.endOffset;
+    //const selectedText = browserSelection.toString();
+
+    const textNode = browserSelection.startContainer;
+    const text = textNode.textContent;
+
+    var selected_action = null;
+    const selected_markups = [];
+    const selected_groups = [];
+
+    for (const markup of markups) {
+      const [startMarkup, endMarkup, ...groups] = markup;
+      if (startMarkup <= startSelection < endMarkup ||
+          startMarkup < endSelection <= endMarkup ||
+          startSelection < startMarkup < endMarkup < endSelection) {
+
+        if (groups.length > 0) {
+          selected_groups.push(...groups);
+          selected_action = 'delete_with_group';
+        } else {
+          selected_action = 'delete_markup';
+        }
+
+      } else {
+        selected_markups.push(markup);
+      }
+
+    if (!selected_action &&
+        (startSelection === 0 || re.match(r'\W', text[startSelection - 1])) &&
+        (endSelection + 1 === text.length || re.match(r'\W', text[endSelection + 1]))) {
+
+      selected_action = 'create';
+      selected_markups.push([startSelection, endSelection]);
+    }
+
+    return { result: selected_markups, action: selected_action, groupsToDelete: selected_groups };
+
+  }, [browserSelection]);
+
+  onBrowserSelection() {
+
+    if (is_order_column) {
+      setBrowserSelection(null);
+      return;
+    }
+
+    const sel = document.getSelection();
+    if (sel.rangeCount !== 1 || sel.anchorNode !== sel.focusNode) {
+      setBrowserSelection(null);
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    const text = range.toString().trim();
+    if (text.length === 0 || text !== range.toString()) {
+      setBrowserSelection(null);
+      return;
+    }
+
+    const elem = sel.anchorNode.parentElement;
+    if (!elem.classList.contains("lingvo-entry-content")) {
+      setBrowserSelection(null);
+      return;
+    }
+
+    setBrowserSelection(range);
+  }
+
+  const markupAction = ({ result, action, groupsToDelete }) => {
+    if (action === 'delete_with_group') {
+      setConfirmation({
+        content: getTranslation(
+          "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?")
+        func: () => {
+          updateMarkups({variables: {result, groupsToDelete}})
+        }
+        }
+      })
+    } else {
+      //update markups in additional_metadata
+    }
+  }
 
   const onEdit = useCallback(() => {
     if (!edit) {
@@ -129,6 +258,8 @@ const TextEntityContent = ({
 
   switch (mode) {
     case "edit":
+      useEffect(() => { document.addEventListener("selectionchange", onBrowserSelection);
+                        return () => { document.removeEventListener("selectionchange", onBrowserSelection); }}, []);
       return !dropped ? (
         <div
           className={
@@ -152,6 +283,21 @@ const TextEntityContent = ({
           )}
           {read_only || (
             <Button.Group basic icon className="lingvo-buttons-group">
+              { (selectMarkups.action || marking) && (
+                <Button
+                  icon={marking
+                    ? <i className="lingvo-icon lingvo-icon_spinner" />
+                    : selectMarkups.action === 'delete_markup'
+                    ? <i className="lingvo-icon lingvo-icon_delete_markup" />
+                    : selectMarkups.action === 'delete_with_group'
+                    ? <i className="lingvo-icon lingvo-icon_delete_markup_group" />
+                    : <i className="lingvo-icon lingvo-icon_create_markup" />
+                  }
+                  onClick={markupAction(selectMarkups)}
+                  disabled={marking}
+                  className={marking ? "lingvo-button-spinner" : ""}
+                />
+              )}
               <div ref={dragRef} className="lingvo-buttons-group__drag">
                 <Button icon={<i className="lingvo-icon lingvo-icon_dnd" />} />
               </div>
@@ -190,6 +336,14 @@ const TextEntityContent = ({
             </Button.Group>
           )}
         </div>
+        <Confirm
+          open={confirmation !== null}
+          header={getTranslation("Confirmation")}
+          content={confirmation ? confirmation.content : null}
+          onConfirm={confirmation ? confirmation.func : null}
+          onCancel={() => setConfirmation(null)}
+          className="lingvo-confirm"
+        />
       ) : null;
     case "publish":
       return (
