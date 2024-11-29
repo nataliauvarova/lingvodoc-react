@@ -4,6 +4,8 @@ import PropTypes from "prop-types";
 
 import TranslationContext from "Layout/TranslationContext";
 
+import "./styles.scss";
+
 const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const getTranslation = useContext(TranslationContext);
 
@@ -22,40 +24,102 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
-      <Modal.Content scrolling>
-        !!!!! Table 1 !!!!!!
-        {/* Table 2 */}
-        <Table celled padded className="lingvo-perspective-table">
-          <Table.Header>
-            <Table.Row>
-              <Table.HeaderCell>&nbsp;</Table.HeaderCell>
-              <Table.HeaderCell>{getTranslation("Left text")}</Table.HeaderCell>
-              <Table.HeaderCell>{getTranslation("Right text")}</Table.HeaderCell>
-              <Table.HeaderCell>{getTranslation("Type")}</Table.HeaderCell>
-              <Table.HeaderCell>{getTranslation("Author")}</Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {relations.map(relation => {
-              return (
-                <Table.Row key={relation.id}>
-                  <Table.Cell>
-                    <Checkbox
-                      className="lingvo-checkbox"
-                      //checked={!!selectedEntries.find(e => isEqual(e, entry.id))}
-                      //onChange={(e, { checked }) => onEntrySelect(entry.id, checked)}
-                    />
-                  </Table.Cell>
-                  <Table.Cell>Left text</Table.Cell>
-                  <Table.Cell>Right text</Table.Cell>
-                  <Table.Cell>Type</Table.Cell>
-                  <Table.Cell>Author</Table.Cell>
+      <Modal.Content /*scrolling*/>
+        <div className="join-markups-content">
+          <div className="join-markups-content__table1">
+            {/* Table 1 */}
+            <div className="block-add-relation">
+              <div className="block-add-relation__first">
+                <Table celled padded className="lingvo-perspective-table">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.HeaderCell>{getTranslation("Left text")}</Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {relations.map(relation => {
+                      return (
+                        <Table.Row key={relation.id}>
+                          <Table.Cell>Left text</Table.Cell>
+                        </Table.Row>
+                      );
+                    })}
+                  </Table.Body>
+                </Table>
+              </div>
+
+              <div className="block-add-relation__second">
+                <Table celled padded className="lingvo-perspective-table">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.HeaderCell>{getTranslation("Right text")}</Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {relations.map(relation => {
+                      return (
+                        <Table.Row key={relation.id}>
+                          <Table.Cell>Right text</Table.Cell>
+                        </Table.Row>
+                      );
+                    })}
+                  </Table.Body>
+                </Table>
+              </div>
+              <div className="block-add-relation__actions">
+                <Button
+                  //icon={<i className="lingvo-icon lingvo-icon_check" />}
+                  content={getTranslation("Join")}
+                  //onClick={onJoinMarkups}
+                  className="lingvo-button-greenest"
+                />
+
+                <Button
+                  //icon={<i className="lingvo-icon lingvo-icon_check" />}
+                  content={getTranslation("Delete")}
+                  //onClick={onJoinMarkups}
+                  className="lingvo-button-redder"
+                />
+              </div>
+            </div>
+            {/* /Table 1 */}
+          </div>
+
+          <div className="join-markups-content__table2">
+            {/* Table 2 */}
+            <Table celled padded className="lingvo-perspective-table">
+              <Table.Header>
+                <Table.Row>
+                  <Table.HeaderCell>&nbsp;</Table.HeaderCell>
+                  <Table.HeaderCell>{getTranslation("Left text")}</Table.HeaderCell>
+                  <Table.HeaderCell>{getTranslation("Right text")}</Table.HeaderCell>
+                  <Table.HeaderCell>{getTranslation("Type")}</Table.HeaderCell>
+                  <Table.HeaderCell>{getTranslation("Author")}</Table.HeaderCell>
                 </Table.Row>
-              );
-            })}
-          </Table.Body>
-        </Table>
-        {/* /Table 2 */}
+              </Table.Header>
+              <Table.Body>
+                {relations.map(relation => {
+                  return (
+                    <Table.Row key={relation.id}>
+                      <Table.Cell>
+                        <Checkbox
+                          className="lingvo-checkbox"
+                          //checked={!!selectedEntries.find(e => isEqual(e, entry.id))}
+                          //onChange={(e, { checked }) => onEntrySelect(entry.id, checked)}
+                        />
+                      </Table.Cell>
+                      <Table.Cell>Left text</Table.Cell>
+                      <Table.Cell>Right text</Table.Cell>
+                      <Table.Cell>Type</Table.Cell>
+                      <Table.Cell>Author</Table.Cell>
+                    </Table.Row>
+                  );
+                })}
+              </Table.Body>
+            </Table>
+            {/* /Table 2 */}
+          </div>
+        </div>
       </Modal.Content>
       <Modal.Actions>
         <Button content={getTranslation("Close")} onClick={onClose} className="lingvo-button-basic-black" />

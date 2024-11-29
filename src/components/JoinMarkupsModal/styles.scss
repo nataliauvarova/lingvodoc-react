@@ -1,0 +1,43 @@
+.join-markups-content {
+  display: flex;
+  flex-direction: column;
+  height: 65vh;
+  //max-height: 100vh;
+
+  &__table1 {
+    height: 50%;
+    //flex: 1 0 50%;
+    padding-bottom: 20px;
+  }
+
+  &__table2 {
+    height: 50%;
+    //flex: 1 0 50%;
+    overflow-y: auto;
+  }
+}
+
+.block-add-relation {
+  display: flex;
+  height: 100%;
+
+  &__first {
+    flex: 1 1 33%;
+    overflow-y: auto;
+  }
+
+  &__second {
+    flex: 1 1 33%;
+    overflow-y: auto;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+
+    & .ui.button {
+      margin-top: 10px !important;
+    }
+  }
+}
