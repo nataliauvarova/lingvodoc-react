@@ -11,31 +11,49 @@ import { useMutation } from "hooks";
 
 import Entities from "./index";
 
-const updateMarkupsMutation = gql`
-  mutation updateMarkups($entityId: LingvodocID!, $result: [[Int]]!, $groupsToDelete: [Int]) {
-    update_markups(id: $entityId, result: $result, groups_to_delete: $groupsToDelete) {
+const updateEntityMarkupMutation = gql`
+  mutation updateEntityMarkup($entityId: LingvodocID!, $result: [[Int]]!, $groupsToDelete: [Int]) {
+    update_entity_markup(id: $entityId, result: $result, groups_to_delete: $groupsToDelete) {
       triumph
     }
   }
 `;
 
+// Entities' additional metadata should be updated as well
+// 'Markups' argument has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
 const createMarkupGroupMutation = gql`
-  mutation createMarkupGroup($type: String!, $author: LingvodocID!) {
-    create_markup_group(type: $type, author: $author) {
-      group_id
+  mutation createMarkupGroup($type: String!, $author: LingvodocID!, $markups: [[Int]]) {
+    create_markup_group(type: $type, author: $author, markups: $markups) {
       triumph
     }
   }
 `;
 
-const getMarkupGroupsQuery = gql`
-  query getMarkupGroups($perspectiveId: LingvodocID!, $type: String, $author: LingvodocID) {
-    get_markup_groups(id: $perspectiveId, type: $type, author: $author) {
-      left_text
-      right_text
-      type
-      author
-      created_at
+const deleteMarkupGroupMutation = gql`
+  mutation deleteMarkupGroup($groupId: Int, $markups: [[Int]]) {
+    delete_markup_group(group_id: $groupId, markups: $markups) {
+      triumph
+    }
+  }
+`;
+
+// Using this query we get data for single markups and for existent groups
+// We have to control broken groups and clean markups of them
+const getMarkupTreeQuery = gql`
+  query getMarkupTree($perspectiveId: LingvodocID!, $type: String, $author: LingvodocID) {
+    markup(id: $perspectiveId) {
+      field_translation
+      field_position
+      entity_client_id
+      entity_object_id
+      markup_offset
+      markup_text
+      group(type: $type, author: $author) {
+        group_id
+        type
+        author
+        created_at
+      }
     }
   }
 `;
