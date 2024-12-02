@@ -8,11 +8,12 @@ import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
 import { patienceDiff } from "utils/patienceDiff";
 import { useMutation } from "hooks";
+import { gql, useMutation } from "@apollo/client";
 
 import Entities from "./index";
 
 const updateEntityMarkupMutation = gql`
-  mutation updateEntityMarkup($entityId: LingvodocID!, $result: [[Int]]!, $groupsToDelete: [Int]) {
+  mutation updateEntityMarkup($entityId: LingvodocID!, $result: [[LingvodocID]]!, $groupsToDelete: [LingvodocID]) {
     update_entity_markup(id: $entityId, result: $result, groups_to_delete: $groupsToDelete) {
       triumph
     }
@@ -22,15 +23,15 @@ const updateEntityMarkupMutation = gql`
 // Entities' additional metadata should be updated as well
 // 'Markups' argument has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
 const createMarkupGroupMutation = gql`
-  mutation createMarkupGroup($type: String!, $author: LingvodocID!, $markups: [[Int]]) {
-    create_markup_group(type: $type, author: $author, markups: $markups) {
+  mutation createMarkupGroup($type: String!, $markups: [[LingvodocID]]) {
+    create_markup_group(type: $type, markups: $markups) {
       triumph
     }
   }
 `;
 
 const deleteMarkupGroupMutation = gql`
-  mutation deleteMarkupGroup($groupId: Int, $markups: [[Int]]) {
+  mutation deleteMarkupGroup($groupId: LingvodocID!, $markups: [[LingvodocID]]) {
     delete_markup_group(group_id: $groupId, markups: $markups) {
       triumph
     }
