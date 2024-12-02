@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { Button, Checkbox, Modal, Table } from "semantic-ui-react";
+import { Button, Checkbox, Form, Modal, Table } from "semantic-ui-react";
 import PropTypes from "prop-types";
 
 import TranslationContext from "Layout/TranslationContext";
@@ -8,6 +8,10 @@ import "./styles.scss";
 
 const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const getTranslation = useContext(TranslationContext);
+
+  //const [firstTextRelation, setFirstTextRelation] = useState(null);
+  //const [secondTextRelation, setSecondTextRelation] = useState(null);
+  const [typeRelation, setTypeRelation] = useState(null);
 
   console.log("perspectiveId====");
   console.log(perspectiveId);
@@ -29,7 +33,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
           <div className="join-markups-content__table1">
             {/* Table 1 */}
             <div className="block-add-relation">
-              <div className="block-add-relation__first">
+              <div className="block-add-relation__column">
                 <Table celled padded className="lingvo-perspective-table">
                   <Table.Header>
                     <Table.Row>
@@ -48,7 +52,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 </Table>
               </div>
 
-              <div className="block-add-relation__second">
+              <div className="block-add-relation__column">
                 <Table celled padded className="lingvo-perspective-table">
                   <Table.Header>
                     <Table.Row>
@@ -67,6 +71,44 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 </Table>
               </div>
               <div className="block-add-relation__actions">
+                {/*<Form>
+                {statistics.map(stat => (
+                  <Form.Radio
+                    key={stat.user_id}
+                    label={stat.name}
+                    value={stat.user_id}
+                    checked={user_id === stat.user_id}
+                    onChange={this.handleUserSelected}
+                    className="lingvo-radio"
+                  />
+                ))}
+              </Form>*/}
+                <Form>
+                  {/*<div>
+                    Selected value: <b>{typeRelation}</b>
+                  </div>*/}
+
+                  <Form.Radio
+                    label={getTranslation("Translit")}
+                    name="radioGroup"
+                    key="Translit"
+                    value="Translit"
+                    checked={typeRelation === "Translit"}
+                    onChange={(e, { value }) => setTypeRelation(value)}
+                    className="lingvo-radio"
+                  />
+
+                  <Form.Radio
+                    label={getTranslation("Literal translation")}
+                    name="radioGroup"
+                    key="LiteralTranslation"
+                    value="LiteralTranslation"
+                    checked={typeRelation === "LiteralTranslation"}
+                    onChange={(e, { value }) => setTypeRelation(value)}
+                    className="lingvo-radio"
+                  />
+                </Form>
+
                 <Button
                   //icon={<i className="lingvo-icon lingvo-icon_check" />}
                   content={getTranslation("Join")}
