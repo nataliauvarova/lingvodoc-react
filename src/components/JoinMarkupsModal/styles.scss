@@ -42,6 +42,15 @@
       z-index: 1;
     }
 
+    & .ui.table tr td {
+      border-radius: 8px !important;
+    }
+
+    & .ui.table .selected-text-relation {
+      background: #4e46b4 !important;
+      color: #fff !important;
+    }
+
     &:first-of-type {
       margin: 0 10px 0 0;
     }

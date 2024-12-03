@@ -9,9 +9,26 @@ import "./styles.scss";
 const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const getTranslation = useContext(TranslationContext);
 
-  //const [firstTextRelation, setFirstTextRelation] = useState(null);
-  //const [secondTextRelation, setSecondTextRelation] = useState(null);
+  const [firstTextRelation, setFirstTextRelation] = useState(null);
+  const [secondTextRelation, setSecondTextRelation] = useState(null);
   const [typeRelation, setTypeRelation] = useState(null);
+
+  const joinActive = firstTextRelation && secondTextRelation && typeRelation;
+
+  const onAddRelation = useCallback(
+    /*newMetadata*/ () => {
+      console.log("onAddRelation!!!!!!!");
+      setFirstTextRelation(null);
+      setSecondTextRelation(null);
+      setTypeRelation(null);
+      /*updateLanguageMetadata({
+        variables: { id: language.id, metadata: newMetadata }
+      }).then(() => setMetadata(newMetadata));*/
+    },
+    [
+      /*language, updateLanguageMetadata*/
+    ]
+  );
 
   console.log("perspectiveId====");
   console.log(perspectiveId);
@@ -25,6 +42,9 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   console.log("relations===");
   console.log(relations);
 
+  console.log("joinActive===");
+  console.log(joinActive);
+
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
@@ -37,14 +57,21 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 <Table celled padded className="lingvo-perspective-table">
                   <Table.Header>
                     <Table.Row>
-                      <Table.HeaderCell>{getTranslation("Left text")}</Table.HeaderCell>
+                      <Table.HeaderCell>
+                        {getTranslation("Left text")}: {firstTextRelation}
+                      </Table.HeaderCell>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
                     {relations.map(relation => {
                       return (
                         <Table.Row key={relation.id}>
-                          <Table.Cell>Left text</Table.Cell>
+                          <Table.Cell
+                            onClick={e => setFirstTextRelation(relation.id)}
+                            className={(relation.id === firstTextRelation && "selected-text-relation") || ""}
+                          >
+                            Left text Left text Left text Left text Left text
+                          </Table.Cell>
                         </Table.Row>
                       );
                     })}
@@ -56,14 +83,21 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 <Table celled padded className="lingvo-perspective-table">
                   <Table.Header>
                     <Table.Row>
-                      <Table.HeaderCell>{getTranslation("Right text")}</Table.HeaderCell>
+                      <Table.HeaderCell>
+                        {getTranslation("Right text")}: {secondTextRelation}
+                      </Table.HeaderCell>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
                     {relations.map(relation => {
                       return (
                         <Table.Row key={relation.id}>
-                          <Table.Cell>Right text</Table.Cell>
+                          <Table.Cell
+                            onClick={e => setSecondTextRelation(relation.id)}
+                            className={(relation.id === secondTextRelation && "selected-text-relation") || ""}
+                          >
+                            Right text Right text Right text Right text
+                          </Table.Cell>
                         </Table.Row>
                       );
                     })}
@@ -112,15 +146,17 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 <Button
                   //icon={<i className="lingvo-icon lingvo-icon_check" />}
                   content={getTranslation("Join")}
-                  //onClick={onJoinMarkups}
+                  onClick={onAddRelation}
                   className="lingvo-button-greenest"
+                  disabled={!joinActive}
                 />
 
                 <Button
                   //icon={<i className="lingvo-icon lingvo-icon_check" />}
                   content={getTranslation("Delete")}
-                  //onClick={onJoinMarkups}
+                  //onClick={onDeleteRelation}
                   className="lingvo-button-redder"
+                  disabled={true}
                 />
               </div>
             </div>
