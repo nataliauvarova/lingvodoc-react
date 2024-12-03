@@ -41,7 +41,7 @@ const deleteMarkupGroupMutation = gql`
 // Using this query we get data for single markups and for existent groups
 // We have to control broken groups and clean markups of them
 const getMarkupTreeQuery = gql`
-  query getMarkupTree($perspectiveId: LingvodocID!, $type: String, $author: LingvodocID) {
+  query getMarkupTree($perspectiveId: LingvodocID!, $type: String, $author: Int) {
     markup(id: $perspectiveId) {
       field_translation
       field_position
@@ -49,8 +49,7 @@ const getMarkupTreeQuery = gql`
       entity_object_id
       markup_offset
       markup_text
-      group(type: $type, author: $author) {
-        group_id
+      markup_groups(type: $type, author: $author) {
         type
         author
         created_at
