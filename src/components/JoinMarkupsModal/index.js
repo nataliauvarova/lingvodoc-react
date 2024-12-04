@@ -14,6 +14,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const [typeRelation, setTypeRelation] = useState(null);
 
   const joinActive = firstTextRelation && secondTextRelation && typeRelation;
+  const [deleteActive, setDeleteActive] = useState(false);
 
   const onAddRelation = useCallback(
     /*newMetadata*/ () => {
@@ -24,6 +25,29 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
       /*updateLanguageMetadata({
         variables: { id: language.id, metadata: newMetadata }
       }).then(() => setMetadata(newMetadata));*/
+    },
+    [
+      /*language, updateLanguageMetadata*/
+    ]
+  );
+
+  const onDeleteRelation = useCallback(
+    () => {
+      console.log("onDeleteRelation!!!!!!!");
+    },
+    [
+      /*language, updateLanguageMetadata*/
+    ]
+  );
+
+  const onRelationSelect = useCallback(
+    (relation_id, checked) => {
+      console.log("onRelationSelect!!!!!!!");
+      console.log("relation_id====");
+      console.log(relation_id);
+      console.log("checked====");
+      console.log(checked);
+      setDeleteActive(true);
     },
     [
       /*language, updateLanguageMetadata*/
@@ -50,8 +74,8 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
       <Modal.Content /*scrolling*/>
         <div className="join-markups-content">
-          <div className="join-markups-content__table1">
-            {/* Table 1 */}
+          <div className="join-markups-content__markups">
+            {/* Table Markups */}
             <div className="block-add-relation">
               <div className="block-add-relation__column">
                 <Table celled padded className="lingvo-perspective-table">
@@ -118,10 +142,6 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 ))}
               </Form>*/}
                 <Form>
-                  {/*<div>
-                    Selected value: <b>{typeRelation}</b>
-                  </div>*/}
-
                   <Form.Radio
                     label={getTranslation("Translit")}
                     name="radioGroup"
@@ -144,7 +164,6 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 </Form>
 
                 <Button
-                  //icon={<i className="lingvo-icon lingvo-icon_check" />}
                   content={getTranslation("Join")}
                   onClick={onAddRelation}
                   className="lingvo-button-greenest"
@@ -152,19 +171,18 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 />
 
                 <Button
-                  //icon={<i className="lingvo-icon lingvo-icon_check" />}
                   content={getTranslation("Delete")}
-                  //onClick={onDeleteRelation}
+                  onClick={onDeleteRelation}
                   className="lingvo-button-redder"
-                  disabled={true}
+                  disabled={!deleteActive}
                 />
               </div>
             </div>
-            {/* /Table 1 */}
+            {/* /Table Markups */}
           </div>
 
-          <div className="join-markups-content__table2">
-            {/* Table 2 */}
+          <div className="join-markups-content__relations">
+            {/* Table Relations */}
             <Table celled padded className="lingvo-perspective-table">
               <Table.Header>
                 <Table.Row>
@@ -183,7 +201,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                         <Checkbox
                           className="lingvo-checkbox"
                           //checked={!!selectedEntries.find(e => isEqual(e, entry.id))}
-                          //onChange={(e, { checked }) => onEntrySelect(entry.id, checked)}
+                          onChange={(e, { checked }) => onRelationSelect(relation.id, checked)}
                         />
                       </Table.Cell>
                       <Table.Cell>Left text</Table.Cell>
@@ -195,7 +213,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 })}
               </Table.Body>
             </Table>
-            {/* /Table 2 */}
+            {/* /Table Relations */}
           </div>
         </div>
       </Modal.Content>
