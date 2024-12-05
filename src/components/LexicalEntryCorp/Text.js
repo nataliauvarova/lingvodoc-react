@@ -8,10 +8,12 @@ import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
 import { patienceDiff } from "utils/patienceDiff";
 import { useMutation } from "hooks";
-import { gql, useMutation } from "@apollo/client";
+import { gql } from "@apollo/client";
 
 import Entities from "./index";
 
+// 'result' has the following format:
+// [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
 const updateEntityMarkupMutation = gql`
   mutation updateEntityMarkup($entityId: LingvodocID!, $result: [[LingvodocID]]!, $groupsToDelete: [LingvodocID]) {
     update_entity_markup(id: $entityId, result: $result, groups_to_delete: $groupsToDelete) {
@@ -21,17 +23,18 @@ const updateEntityMarkupMutation = gql`
 `;
 
 // Entities' additional metadata should be updated as well
-// 'Markups' argument has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
+// 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
 const createMarkupGroupMutation = gql`
-  mutation createMarkupGroup($type: String!, $markups: [[LingvodocID]]) {
-    create_markup_group(type: $type, markups: $markups) {
+  mutation createMarkupGroup($gr_type: String!, $markups: [[Int]]) {
+    create_markup_group(gr_type: $gr_type, markups: $markups) {
       triumph
     }
   }
 `;
 
+// 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
 const deleteMarkupGroupMutation = gql`
-  mutation deleteMarkupGroup($groupId: LingvodocID!, $markups: [[LingvodocID]]) {
+  mutation deleteMarkupGroup($groupId: LingvodocID!, $markups: [[Int]]) {
     delete_markup_group(group_id: $groupId, markups: $markups) {
       triumph
     }
@@ -41,15 +44,15 @@ const deleteMarkupGroupMutation = gql`
 // Using this query we get data for single markups and for existent groups
 // We have to control broken groups and clean markups of them
 const getMarkupTreeQuery = gql`
-  query getMarkupTree($perspectiveId: LingvodocID!, $type: String, $author: Int) {
-    markup(id: $perspectiveId) {
+  query getMarkupTree($perspectiveId: LingvodocID!, $gr_type: String, $author: Int) {
+    markups(id: $perspectiveId) {
       field_translation
       field_position
       entity_client_id
       entity_object_id
       markup_offset
       markup_text
-      markup_groups(type: $type, author: $author) {
+      markup_groups(gr_type: $gr_type, author: $author) {
         type
         author
         created_at
@@ -98,7 +101,7 @@ const TextEntityContent = ({
 
   const [updateMarkups] = useMutation(updateMarkupsMutation, { onCompleted: () => refetch() });
 
-  const selectMarkups() = useCallback(() => {
+  const selectMarkups = useCallback(() => {
 
     if (!browserSelection) {
       return { result: markups, action: null, groupsToDelete: null };
@@ -131,10 +134,11 @@ const TextEntityContent = ({
       } else {
         selected_markups.push(markup);
       }
+    }
 
     if (!selected_action &&
-        (startSelection === 0 || re.match(r'\W', text[startSelection - 1])) &&
-        (endSelection + 1 === text.length || re.match(r'\W', text[endSelection + 1]))) {
+        (startSelection === 0 || /\W/.test(text[startSelection - 1])) &&
+        (endSelection + 1 === text.length || /\W/.test(text[endSelection + 1]))) {
 
       selected_action = 'create';
       selected_markups.push([startSelection, endSelection]);
@@ -144,7 +148,7 @@ const TextEntityContent = ({
 
   }, [browserSelection]);
 
-  onBrowserSelection() {
+  const onBrowserSelection = () =>  {
 
     if (is_order_column) {
       setBrowserSelection(null);
@@ -177,10 +181,9 @@ const TextEntityContent = ({
     if (action === 'delete_with_group') {
       setConfirmation({
         content: getTranslation(
-          "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?")
+          "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?"),
         func: () => {
           updateMarkups({variables: {result, groupsToDelete}})
-        }
         }
       })
     } else {
@@ -353,15 +356,15 @@ const TextEntityContent = ({
               )}
             </Button.Group>
           )}
+          <Confirm
+            open={confirmation !== null}
+            header={getTranslation("Confirmation")}
+            content={confirmation ? confirmation.content : null}
+            onConfirm={confirmation ? confirmation.func : null}
+            onCancel={() => setConfirmation(null)}
+            className="lingvo-confirm"
+          />
         </div>
-        <Confirm
-          open={confirmation !== null}
-          header={getTranslation("Confirmation")}
-          content={confirmation ? confirmation.content : null}
-          onConfirm={confirmation ? confirmation.func : null}
-          onCancel={() => setConfirmation(null)}
-          className="lingvo-confirm"
-        />
       ) : null;
     case "publish":
       return (
