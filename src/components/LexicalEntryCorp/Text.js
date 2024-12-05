@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useContext, useEffect } from "react";
+import TranslationContext from "Layout/TranslationContext";
 import { useDrag } from "react-dnd";
 import { RegExpMarker } from "react-mark.js";
 import TextareaAutosize from "react-textarea-autosize";
-import { Button, Checkbox } from "semantic-ui-react";
+import { Button, Checkbox, Confirm } from "semantic-ui-react";
 import { find, isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
@@ -93,13 +94,13 @@ const TextEntityContent = ({
 
   const [dropped, setDropped] = useState(null);
 
-  const [markups, setMarkups] = useState(entity.additional_metadata?.get('markups') || []);
+  const [markups, setMarkups] = useState(entity.additional_metadata?.markups || []);
   const [marking, setMarking] = useState(false);
   const [browserSelection, setBrowserSelection] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const getTranslation = useContext(TranslationContext);
 
-  const [updateMarkups] = useMutation(updateMarkupsMutation, { onCompleted: () => refetch() });
+  const [updateMarkups] = useMutation(updateEntityMarkupMutation, { onCompleted: () => refetch() });
 
   const selectMarkups = useCallback(() => {
 
