@@ -171,10 +171,11 @@ const TextEntityContent = ({
 
     const elem = sel.anchorNode.parentElement;
     if (!elem.classList.contains("lingvo-entry-content")) {
-      setBrowserSelection(null);
-      return;
+      //setBrowserSelection(null);
+      //return;
     }
 
+    console.log(text)
     setBrowserSelection(range);
   }
 
@@ -226,6 +227,19 @@ const TextEntityContent = ({
       }
     }
   });
+
+  useEffect(() => { 
+    const element = document.getElementById(id);
+    
+    element.addEventListener("selectstart", () => {
+      console.log("Selection started in " + element.id);
+      document.addEventListener("selectionchange", onBrowserSelection);
+    });
+    
+    element.addEventListener("mouseleave", () => {
+      document.removeEventListener("selectionchange", onBrowserSelection);
+    });
+  }, [ preview ]);
 
   const text = is_number ? number : entity.content;
 
@@ -280,8 +294,6 @@ const TextEntityContent = ({
 
   switch (mode) {
     case "edit":
-      useEffect(() => { document.addEventListener("selectionchange", onBrowserSelection);
-                        return () => { document.removeEventListener("selectionchange", onBrowserSelection); }}, []);
       return !dropped ? (
         <div
           className={
