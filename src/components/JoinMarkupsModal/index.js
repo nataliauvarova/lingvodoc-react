@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useState } from "react";
 import { Button, Checkbox, Form, Modal, Table } from "semantic-ui-react";
+import { isEqual } from "lodash";
 import PropTypes from "prop-types";
 
 import TranslationContext from "Layout/TranslationContext";
@@ -16,6 +17,8 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const joinActive = firstTextRelation && secondTextRelation && typeRelation;
   const [deleteActive, setDeleteActive] = useState(false);
 
+  const [selectedRelations, setSelectedRelations] = useState([]);
+
   const onAddRelation = useCallback(
     /*newMetadata*/ () => {
       console.log("onAddRelation!!!!!!!");
@@ -31,28 +34,37 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
     ]
   );
 
-  const onDeleteRelation = useCallback(
-    () => {
-      console.log("onDeleteRelation!!!!!!!");
-    },
-    [
-      /*language, updateLanguageMetadata*/
-    ]
-  );
+  const onDeleteRelation = useCallback(() => {
+    console.log("onDeleteRelation!!!!!!!");
+    console.log("Их будем удалять: selectedRelations====");
+    console.log(selectedRelations);
+  }, []);
 
-  const onRelationSelect = useCallback(
-    (relation_id, checked) => {
-      console.log("onRelationSelect!!!!!!!");
-      console.log("relation_id====");
-      console.log(relation_id);
-      console.log("checked====");
-      console.log(checked);
-      setDeleteActive(true);
-    },
-    [
-      /*language, updateLanguageMetadata*/
-    ]
-  );
+  const onRelationSelect = useCallback((relation_id, checked) => {
+    console.log("onRelationSelect!!!!!!!");
+    console.log("relation_id====");
+    console.log(relation_id);
+    console.log("checked====");
+    console.log(checked);
+    console.log("Начало функции: selectedRelations====");
+    console.log(selectedRelations);
+
+    const selectedIds = selectedRelations;
+
+    const position = selectedIds.indexOf(relation_id);
+
+    if (position === -1 && checked) {
+      selectedIds.push(relation_id);
+    } else {
+      selectedIds.splice(position, 1);
+    }
+
+    console.log("onRelationSelect: selectedIds======");
+    console.log(selectedIds);
+
+    setSelectedRelations(selectedIds);
+    setDeleteActive(selectedIds.length > 0);
+  }, []);
 
   console.log("perspectiveId====");
   console.log(perspectiveId);
@@ -68,6 +80,9 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
 
   console.log("joinActive===");
   console.log(joinActive);
+
+  console.log("selectedRelations=====");
+  console.log(selectedRelations);
 
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
@@ -194,23 +209,21 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {relations.map(relation => {
-                  return (
-                    <Table.Row key={relation.id}>
-                      <Table.Cell>
-                        <Checkbox
-                          className="lingvo-checkbox"
-                          //checked={!!selectedEntries.find(e => isEqual(e, entry.id))}
-                          onChange={(e, { checked }) => onRelationSelect(relation.id, checked)}
-                        />
-                      </Table.Cell>
-                      <Table.Cell>Left text</Table.Cell>
-                      <Table.Cell>Right text</Table.Cell>
-                      <Table.Cell>Type</Table.Cell>
-                      <Table.Cell>Author</Table.Cell>
-                    </Table.Row>
-                  );
-                })}
+                {relations.map(relation => (
+                  <Table.Row key={relation.id}>
+                    <Table.Cell>
+                      <Checkbox
+                        className="lingvo-checkbox"
+                        //checked={selectedRelations.find(e => isEqual(e, relation.id))}
+                        onChange={(e, { checked }) => onRelationSelect(relation.id, checked)}
+                      />
+                    </Table.Cell>
+                    <Table.Cell>Left text</Table.Cell>
+                    <Table.Cell>Right text</Table.Cell>
+                    <Table.Cell>Type</Table.Cell>
+                    <Table.Cell>Author</Table.Cell>
+                  </Table.Row>
+                ))}
               </Table.Body>
             </Table>
             {/* /Table Relations */}

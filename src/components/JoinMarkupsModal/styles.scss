@@ -32,6 +32,7 @@
 
   &__column {
     flex: 1 1 33%;
+    //width: 33%;
     overflow-y: auto;
     margin: 0 0 0 10px;
 
@@ -70,6 +71,8 @@
   }
 
   &__actions {
+    flex: 0 1 auto;
+    min-width: 170px;
     display: flex;
     flex-direction: column;
     padding: 10px;
