@@ -150,33 +150,50 @@ const TextEntityContent = ({
   }, [browserSelection]);
 
   const onBrowserSelection = () =>  {
+    
+    const range = document.getSelection().getRangeAt(0);
 
-    if (is_order_column) {
-      setBrowserSelection(null);
+    let startContainer = range.startContainer;
+    let parentElement = startContainer.parentElement;
+    
+    // Going up to target element if we are inside e.g. <mark> tag 
+    while (parentElement.tagName !== 'DIV') {
+      startContainer = parentElement;
+      parentElement = startContainer.parentElement;
+      if (!parentElement) {
+        return;
+      }
+    }
+
+    // if not "edit" mode. We can not simply check for mode value because of useEffect and EventListener specific 
+    if (parentElement.parentElement?.classList[0] !== "lingvo-input-buttons-group__name") {
       return;
     }
 
-    const sel = document.getSelection();
-    if (sel.rangeCount !== 1 || sel.anchorNode !== sel.focusNode) {
-      setBrowserSelection(null);
-      return;
-    }
-
-    const range = sel.getRangeAt(0);
     const text = range.toString().trim();
+
     if (text.length === 0 || text !== range.toString()) {
-      setBrowserSelection(null);
       return;
     }
 
-    const elem = sel.anchorNode.parentElement;
-    if (!elem.classList.contains("lingvo-entry-content")) {
-      //setBrowserSelection(null);
-      //return;
+    let startOffset = range.startOffset;
+    let node = startContainer.previousSibling;
+    
+    // Calculate real start offset through the all previous siblings  
+    while (!!node) {
+      startOffset += node.textContent.length;
+      node = node.previousSibling;
     }
 
-    console.log(text)
-    setBrowserSelection(range);
+    const endOffset = startOffset + text.length;
+    
+    console.log(id + ' : ' + startOffset + ' : ' + endOffset + ' : ' + text);
+        
+    setBrowserSelection({
+      startOffset,
+      endOffset,  
+      text
+    });
   }
 
   const markupAction = ({ result, action, groupsToDelete }) => {
@@ -228,17 +245,9 @@ const TextEntityContent = ({
     }
   });
 
-  useEffect(() => { 
+  useEffect(() => {
     const element = document.getElementById(id);
-    
-    element.addEventListener("selectstart", () => {
-      console.log("Selection started in " + element.id);
-      document.addEventListener("selectionchange", onBrowserSelection);
-    });
-    
-    element.addEventListener("mouseleave", () => {
-      document.removeEventListener("selectionchange", onBrowserSelection);
-    });
+    element?.addEventListener("mouseup", onBrowserSelection );
   }, [ preview ]);
 
   const text = is_number ? number : entity.content;
