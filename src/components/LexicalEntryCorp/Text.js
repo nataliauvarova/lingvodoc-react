@@ -151,7 +151,7 @@ const TextEntityContent = ({
 
   const getCurrentArea = useCallback(() => document.getElementById(id), [ id ]);
 
-  const getCurrentSelection = () => {
+  const getCurrentSelection = (checkSelectedText = true) => {
 
     if (!document.getSelection().rangeCount) {
       return null;
@@ -160,7 +160,7 @@ const TextEntityContent = ({
     const range = document.getSelection().getRangeAt(0);
     const text = range.toString().trim();
 
-    if (text.length === 0 || text !== range.toString()) {
+    if (checkSelectedText && (text.length === 0 || text !== range.toString())) {
       return null;
     }
 
@@ -219,11 +219,11 @@ const TextEntityContent = ({
     });
   }
 
-  const resetMarkupAction = () => {
+  const resetMarkupAction = (event) => {
 
-    if (!!getCurrentSelection()) {
+    if (!!getCurrentSelection((event.type !== "mousedown"))) {
       setBrowserSelection(null);
-      console.log("Reset markup action : " + Date.now());
+      console.log("Reset markup action : " + id + ' : ' + Date.now());
     }
   }
 
