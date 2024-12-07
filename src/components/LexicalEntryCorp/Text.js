@@ -149,32 +149,55 @@ const TextEntityContent = ({
 
   }, [browserSelection]);
 
-  const onBrowserSelection = () =>  {
-    
+  const getCurrentArea = useCallback(() => document.getElementById(id), [ id ]);
+
+  const getCurrentSelection = () => {
+
+    if (!document.getSelection().rangeCount) {
+      return null;
+    }
+
     const range = document.getSelection().getRangeAt(0);
-
-    let startContainer = range.startContainer;
-    let parentElement = startContainer.parentElement;
-    
-    // Going up to target element if we are inside e.g. <mark> tag 
-    while (parentElement.tagName !== 'DIV') {
-      startContainer = parentElement;
-      parentElement = startContainer.parentElement;
-      if (!parentElement) {
-        return;
-      }
-    }
-
-    // if not "edit" mode. We can not simply check for mode value because of useEffect and EventListener specific 
-    if (parentElement.parentElement?.classList[0] !== "lingvo-input-buttons-group__name") {
-      return;
-    }
-
     const text = range.toString().trim();
 
     if (text.length === 0 || text !== range.toString()) {
+      return null;
+    }
+
+    let startContainer = range.startContainer;
+
+    // Going up to target element if we are inside e.g. <mark> tag
+    while (startContainer.parentElement.tagName !== 'DIV') {
+      startContainer = startContainer.parentElement;
+      if (!startContainer || !startContainer.parentElement) {
+        return null;
+      }
+    }
+
+    // if not "edit" mode. We can not simply check for mode value because of useEffect and EventListener specific
+    if (startContainer.parentElement.parentElement?.classList[0] !== "lingvo-input-buttons-group__name") {
+      return null;
+    }
+
+    if (getCurrentArea().contains(startContainer)) {
+      return {
+        range,
+        text,
+        startContainer
+      };
+    }
+    return null;
+  }
+
+  const onBrowserSelection = () =>  {
+
+    const currentSelection = getCurrentSelection();
+
+    if (!currentSelection) {
       return;
     }
+
+    const {range, text, startContainer} = currentSelection;
 
     let startOffset = range.startOffset;
     let node = startContainer.previousSibling;
@@ -194,6 +217,14 @@ const TextEntityContent = ({
       endOffset,  
       text
     });
+  }
+
+  const resetMarkupAction = () => {
+
+    if (!!getCurrentSelection()) {
+      setBrowserSelection(null);
+      console.log("Reset markup action : " + Date.now());
+    }
   }
 
   const markupAction = ({ result, action, groupsToDelete }) => {
@@ -246,8 +277,11 @@ const TextEntityContent = ({
   });
 
   useEffect(() => {
-    const element = document.getElementById(id);
+    const element = getCurrentArea();
     element?.addEventListener("mouseup", onBrowserSelection );
+    element?.addEventListener("mouseenter", onBrowserSelection);
+    element?.addEventListener("mousedown", resetMarkupAction);
+    element?.addEventListener("mouseleave", resetMarkupAction);
   }, [ preview ]);
 
   const text = is_number ? number : entity.content;
