@@ -32,8 +32,7 @@ const TextEntityContent = ({
   update,
   id
 }) => {
-
-  const is_order_column = (number && column.english_translation === "Order");
+  const is_order_column = number && column.english_translation === "Order";
 
   const [edit, setEdit] = useState(false);
   const [content, setContent] = useState(entity.content);
@@ -51,21 +50,22 @@ const TextEntityContent = ({
     }
   }, [edit, content]);
 
-  const onKeyDown = useCallback((event) => {
+  const onKeyDown = useCallback(
+    event => {
+      breakdown(event, parentEntity, entity);
 
-    breakdown(event, parentEntity, entity);
-
-    if (event.code === "Enter" && !event.ctrlKey) {
-      onEdit();
-    }
-
-  }, [edit, content]);
+      if (event.code === "Enter" && !event.ctrlKey) {
+        onEdit();
+      }
+    },
+    [edit, content]
+  );
 
   // useDrag - the list item is draggable
-  const [{ isDragging}, dragRef, preview] = useDrag({
-    type: 'entity',
+  const [{ isDragging }, dragRef, preview] = useDrag({
+    type: "entity",
     item: { id, content },
-    collect: (monitor) => ({
+    collect: monitor => ({
       isDragging: monitor.isDragging()
     }),
     end: (item, monitor) => {
@@ -125,41 +125,65 @@ const TextEntityContent = ({
   const ln = /\(\d+\)/;
   const snt = /\u2260/;
   const missed = /[/]missed text[/]/;
-  const metatext = new RegExp(
-    `${pg_ln.source }|${ 
-    pg.source }|${ 
-    ln.source }|${ 
-    snt.source }|${ 
-    missed.source}`
-  );
+  const metatext = new RegExp(`${pg_ln.source}|${pg.source}|${ln.source}|${snt.source}|${missed.source}`);
 
   switch (mode) {
     case "edit":
       return !dropped ? (
-        <div className={isDragging && "lingvo-input-buttons-group lingvo-input-buttons-group_drag" || "lingvo-input-buttons-group"} ref={preview} id={id}>
+        <div
+          className={
+            (isDragging && "lingvo-input-buttons-group lingvo-input-buttons-group_drag") || "lingvo-input-buttons-group"
+          }
+          ref={preview}
+          id={id}
+        >
           {!(is_being_updated || edit) && (
-            <span className="lingvo-input-buttons-group__name"><RegExpMarker mark={metatext}>{text}</RegExpMarker></span>
+            <span className="lingvo-input-buttons-group__name">
+              <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+            </span>
           )}
           {(is_being_updated || edit) && (
-            <TextareaAutosize 
+            <TextareaAutosize
               defaultValue={text}
-              onChange={(event) => setContent(event.target.value)}
+              onChange={event => setContent(event.target.value)}
               onKeyDown={onKeyDown}
-              className="lingvo-input-action lingvo-input-action_textarea" 
+              className="lingvo-input-action lingvo-input-action_textarea"
             />
           )}
-          { read_only || (
+          {read_only || (
             <Button.Group basic icon className="lingvo-buttons-group">
               <div ref={dragRef} className="lingvo-buttons-group__drag">
                 <Button icon={<i className="lingvo-icon lingvo-icon_dnd" />} />
               </div>
-              <Button icon={is_being_updated ? <i className="lingvo-icon lingvo-icon_spinner" /> : edit ? <i className="lingvo-icon lingvo-icon_save2" /> : <i className="lingvo-icon lingvo-icon_edit2" />}
+              {/* new!!!!! */}
+              <Button className="lingvo-button-markup lingvo-button-markup_create" content="M" title="Create markup" />
+              <Button className="lingvo-button-markup lingvo-button-markup_delete" content="M" title="Delete markup" />
+              <Button
+                className="lingvo-button-markup lingvo-button-markup_delete"
+                content="G"
+                title="Delete markup group"
+              />
+              {/* /new!!!!! */}
+              <Button
+                icon={
+                  is_being_updated ? (
+                    <i className="lingvo-icon lingvo-icon_spinner" />
+                  ) : edit ? (
+                    <i className="lingvo-icon lingvo-icon_save2" />
+                  ) : (
+                    <i className="lingvo-icon lingvo-icon_edit2" />
+                  )
+                }
                 onClick={onEdit}
                 disabled={is_being_updated || !text}
                 className={is_being_updated ? "lingvo-button-spinner" : ""}
               />
               {is_being_removed ? (
-                <Button icon={<i className="lingvo-icon lingvo-icon_spinner" />} disabled className="lingvo-button-spinner" />
+                <Button
+                  icon={<i className="lingvo-icon lingvo-icon_spinner" />}
+                  disabled
+                  className="lingvo-button-spinner"
+                />
               ) : (
                 <Button icon={<i className="lingvo-icon lingvo-icon_delete2" />} onClick={() => remove(entity)} />
               )}
@@ -171,7 +195,7 @@ const TextEntityContent = ({
       return (
         <div className="lingvo-entry-text">
           {column.english_translation &&
-          column.english_translation === "Number of the languages" && 
+          column.english_translation === "Number of the languages" &&
           entity.id &&
           entity.parent_id ? (
             <span className="lingvo-entry-content">
@@ -183,10 +207,12 @@ const TextEntityContent = ({
               </a>
             </span>
           ) : (
-            <span className="lingvo-entry-content"><RegExpMarker mark={metatext}>{text}</RegExpMarker></span>
+            <span className="lingvo-entry-content">
+              <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+            </span>
           )}
           <Checkbox
-            className="lingvo-checkbox lingvo-entry-text__checkbox" 
+            className="lingvo-checkbox lingvo-entry-text__checkbox"
             checked={entity.published}
             onChange={(e, { checked }) => {
               publish(entity, checked);
@@ -209,24 +235,24 @@ const TextEntityContent = ({
 
     case "view":
       return (
-        <span className="lingvo-entry-content"><RegExpMarker mark={metatext}>{text}</RegExpMarker></span>
+        <span className="lingvo-entry-content">
+          <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+        </span>
       );
     case "contributions":
       return entity.accepted ? (
-        <span className="lingvo-entry-content"><RegExpMarker mark={metatext}>{text}</RegExpMarker></span>
+        <span className="lingvo-entry-content">
+          <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+        </span>
       ) : (
         <Button.Group basic icon className="lingvo-buttons-group">
           <Button content={text} className="lingvo-buttons-group__text" />
-          <Button 
-            icon={<i className="lingvo-icon lingvo-icon_check2" />} 
-            onClick={() => accept(entity, true)} 
-          />
+          <Button icon={<i className="lingvo-icon lingvo-icon_check2" />} onClick={() => accept(entity, true)} />
         </Button.Group>
       );
     default:
       return null;
   }
-  
 };
 
 const Text = onlyUpdateForKeys([
@@ -239,7 +265,7 @@ const Text = onlyUpdateForKeys([
   "checkedColumn",
   "checkedAll",
   "number",
-  "id",
+  "id"
 ])(props => {
   const {
     perspectiveId,
@@ -268,7 +294,7 @@ const Text = onlyUpdateForKeys([
     is_being_removed,
     is_being_updated,
     number,
-    id,
+    id
   } = props;
 
   const subColumn = find(columns, c => isEqual(c.self_id, column.column_id));
@@ -276,7 +302,7 @@ const Text = onlyUpdateForKeys([
   return (
     <Component className={className}>
       <TextEntityContent
-        entry={entry} 
+        entry={entry}
         entity={entity}
         checkEntries={checkEntries}
         checkedRow={checkedRow}
@@ -286,17 +312,17 @@ const Text = onlyUpdateForKeys([
         checkedAll={checkedAll}
         resetCheckedAll={resetCheckedAll}
         mode={mode}
-        parentEntity={parentEntity} 
+        parentEntity={parentEntity}
         publish={publish}
         column={column}
         accept={accept}
         remove={remove}
         update={update}
-        breakdown={breakdown} 
+        breakdown={breakdown}
         is_being_removed={is_being_removed}
         is_being_updated={is_being_updated}
         number={number}
-        id={id} 
+        id={id}
       />
       {subColumn && (
         <Entities
@@ -341,7 +367,7 @@ Text.propTypes = {
   resetCheckedColumn: PropTypes.func,
   resetCheckedAll: PropTypes.func,
   number: PropTypes.string,
-  id: PropTypes.array.isRequired,
+  id: PropTypes.array.isRequired
 };
 
 Text.defaultProps = {
@@ -349,56 +375,58 @@ Text.defaultProps = {
   className: ""
 };
 
-const Edit = ({
-  onSave, 
-  onCancel, 
-  is_being_created,
-  parentEntity,
-  breakdown
-  }) => {
-
+const Edit = ({ onSave, onCancel, is_being_created, parentEntity, breakdown }) => {
   const [content, setContent] = useState("");
 
-  const onChange = useCallback((event) => {
+  const onChange = useCallback(
+    event => {
+      setContent(event.target.value);
+    },
+    [content]
+  );
 
-    setContent(event.target.value);
+  const onKeyDown = useCallback(
+    event => {
+      breakdown(event, parentEntity);
 
-  }, [content]);
+      if (event.code === "Enter" && !event.ctrlKey) {
+        if (content) {
+          onSave(content);
+        }
+      }
 
-  const onKeyDown = useCallback((event) => {
+      if (event.keyCode === 27) {
+        onCancel();
+      }
+    },
+    [content]
+  );
 
-    breakdown(event, parentEntity);
-
-    if (event.code === "Enter" && !event.ctrlKey) {
-
+  const onHandlerSave = useCallback(
+    event => {
       if (content) {
         onSave(content);
       }
-    }
+    },
+    [content]
+  );
 
-    if (event.keyCode === 27) {
-      onCancel();
-    }
-  }, [content]);
-
-  const onHandlerSave = useCallback((event) => {
-
-    if (content) {
-      onSave(content);
-    }
-
-  }, [content]);
-  
   return (
     <div className="lingvo-input-buttons-group">
-      <TextareaAutosize 
+      <TextareaAutosize
         onChange={onChange}
         onKeyDown={onKeyDown}
-        className="lingvo-input-action lingvo-input-action_textarea" 
+        className="lingvo-input-action lingvo-input-action_textarea"
       />
       <Button.Group basic className="lingvo-buttons-group">
-        <Button 
-          icon={is_being_created ? <i className="lingvo-icon lingvo-icon_spinner" /> : <i className="lingvo-icon lingvo-icon_save2" />} 
+        <Button
+          icon={
+            is_being_created ? (
+              <i className="lingvo-icon lingvo-icon_spinner" />
+            ) : (
+              <i className="lingvo-icon lingvo-icon_save2" />
+            )
+          }
           onClick={onHandlerSave}
           disabled={is_being_created || !content}
           className={is_being_created ? "lingvo-button-spinner" : ""}
@@ -407,7 +435,6 @@ const Edit = ({
       </Button.Group>
     </div>
   );
-
 };
 
 Edit.propTypes = {
