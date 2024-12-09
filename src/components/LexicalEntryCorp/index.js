@@ -66,8 +66,8 @@ const removeEntityMutation = gql`
 `;
 
 const updateEntityMutation = gql`
-  mutation updateEntity($id: LingvodocID!, $content: String!) {
-    update_entity_content(id: $id, content: $content) {
+  mutation updateEntity($id: LingvodocID!, $content: String!, $markups: [[LingvodocID]]) {
+    update_entity_content(id: $id, content: $content, markups: $markups) {
       triumph
     }
   }
@@ -92,7 +92,8 @@ const lexicalEntryQuery = gql`
         published
         accepted
         additional_metadata {
-          link_perspective_id
+          link_perspective_id,
+          markups
         }
         is_subject_for_parsing
       }
@@ -391,7 +392,7 @@ const Entities = ({
     });
   }, [remove_set]);
 
-  const update = useCallback((entity, content) => {
+  const update = useCallback((entity, content = entity.content, markups = null) => {
 
     const entity_id_str = id2str(entity.id);
 
@@ -400,7 +401,7 @@ const Entities = ({
     setUpdateSet(update_set2);
 
     updateEntity({
-      variables: { id: entity.id, content },
+      variables: { id: entity.id, content, markups },
       refetchQueries: [
         {
           query: lexicalEntryQuery,

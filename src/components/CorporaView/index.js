@@ -92,7 +92,8 @@ export const queryLexicalEntries = gql`
           published
           accepted
           additional_metadata {
-            link_perspective_id
+            link_perspective_id,
+            markups
           }
           is_subject_for_parsing
         }
