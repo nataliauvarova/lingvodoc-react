@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useContext, useEffect } from "react";
 import TranslationContext from "Layout/TranslationContext";
 import { useDrag } from "react-dnd";
-import { RegExpMarker } from "react-mark.js";
+import { RegExpMarker, RangesMarker } from "react-mark.js";
 import TextareaAutosize from "react-textarea-autosize";
 import { Button, Checkbox, Confirm } from "semantic-ui-react";
 import { find, isEqual } from "lodash";
@@ -333,7 +333,24 @@ const TextEntityContent = ({
   const ln = /\(\d+\)/;
   const snt = /\u2260/;
   const missed = /[/]missed text[/]/;
-  const metatext = new RegExp(`${pg_ln.source}|${pg.source}|${ln.source}|${snt.source}|${missed.source}`);
+  const metatext = new RegExp(
+    [pg_ln, pg, ln, snt, missed].map(regex => regex.source).join('|'), 'g');
+
+  const highlights = ( browserSelection
+    ? [{
+        start: browserSelection.startOffset,
+        length: browserSelection.text.length
+      }]
+    : []
+  );
+
+  let segment;
+  while ((segment = metatext.exec(text)) !== null) {
+    highlights.push({
+      start: segment.index,
+      length: segment[0].length
+    });
+  }
 
   switch (mode) {
     case "edit":
@@ -347,7 +364,9 @@ const TextEntityContent = ({
         >
           {!(is_being_updated || edit) && (
             <span className="lingvo-input-buttons-group__name">
-              <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+              <RangesMarker mark={highlights}>
+                {text}
+              </RangesMarker>
             </span>
           )}
           {(is_being_updated || edit) && (
