@@ -42,12 +42,12 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
 
   const onRelationSelect = useCallback((relation_id, checked) => {
     console.log("onRelationSelect!!!!!!!");
-    console.log("relation_id====");
+    /*console.log("relation_id====");
     console.log(relation_id);
     console.log("checked====");
     console.log(checked);
     console.log("Начало функции: selectedRelations====");
-    console.log(selectedRelations);
+    console.log(selectedRelations);*/
 
     const selectedIds = selectedRelations;
 
@@ -66,7 +66,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
     setDeleteActive(selectedIds.length > 0);
   }, []);
 
-  console.log("perspectiveId====");
+  /*console.log("perspectiveId====");
   console.log(perspectiveId);
 
   console.log("mode====");
@@ -82,12 +82,12 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   console.log(joinActive);
 
   console.log("selectedRelations=====");
-  console.log(selectedRelations);
+  console.log(selectedRelations);*/
 
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
-      <Modal.Content /*scrolling*/>
+      <Modal.Content>
         <div className="join-markups-content">
           <div className="join-markups-content__markups">
             {/* Table Markups */}
@@ -201,7 +201,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
             <Table celled padded className="lingvo-perspective-table">
               <Table.Header>
                 <Table.Row>
-                  <Table.HeaderCell>&nbsp;</Table.HeaderCell>
+                  <Table.HeaderCell className="th-checkbox">&nbsp;</Table.HeaderCell>
                   <Table.HeaderCell>{getTranslation("Left text")}</Table.HeaderCell>
                   <Table.HeaderCell>{getTranslation("Right text")}</Table.HeaderCell>
                   <Table.HeaderCell>{getTranslation("Type")}</Table.HeaderCell>
