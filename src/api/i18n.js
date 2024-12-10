@@ -100,6 +100,7 @@ export const stringsToTranslate = [
   "Attached to another group.",
   "attributive",
   "Audio",
+  "Author",
   "Authors",
   "automatic creation of dictionaries from text corpora",
   "automatic segmentation of native speaker surveys, uploaded into the Telegram channel “LingvoDoc Support”, into separate words",
