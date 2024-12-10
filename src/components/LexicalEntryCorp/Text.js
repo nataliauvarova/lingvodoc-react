@@ -1,13 +1,66 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useContext, useEffect } from "react";
+import TranslationContext from "Layout/TranslationContext";
 import { useDrag } from "react-dnd";
-import { RegExpMarker } from "react-mark.js";
+import { RegExpMarker, RangesMarker } from "react-mark.js";
 import TextareaAutosize from "react-textarea-autosize";
-import { Button, Checkbox } from "semantic-ui-react";
+import { Button, Checkbox, Confirm } from "semantic-ui-react";
 import { find, isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
+import { patienceDiff } from "utils/patienceDiff";
+import { useMutation } from "hooks";
+import { gql } from "@apollo/client";
 
 import Entities from "./index";
+
+// 'result' has the following format:
+// [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
+const updateEntityMarkupMutation = gql`
+  mutation updateEntityMarkup($entityId: LingvodocID!, $result: [[LingvodocID]]!, $groupsToDelete: [LingvodocID]) {
+    update_entity_markup(id: $entityId, result: $result, groups_to_delete: $groupsToDelete) {
+      triumph
+    }
+  }
+`;
+
+// Entities' additional metadata should be updated as well
+// 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
+const createMarkupGroupMutation = gql`
+  mutation createMarkupGroup($gr_type: String!, $markups: [[Int]]) {
+    create_markup_group(gr_type: $gr_type, markups: $markups) {
+      triumph
+    }
+  }
+`;
+
+// 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
+const deleteMarkupGroupMutation = gql`
+  mutation deleteMarkupGroup($groupId: LingvodocID!, $markups: [[Int]], $perspectiveId: LingvodocID) {
+    delete_markup_group(group_id: $groupId, markups: $markups, perspective_id: $perspectiveId) {
+      triumph
+    }
+  }
+`;
+
+// Using this query we get data for single markups and for existent groups
+// We have to control broken groups and clean markups of them
+const getMarkupTreeQuery = gql`
+  query getMarkupTree($perspectiveId: LingvodocID!, $gr_type: String, $author: Int) {
+    markups(id: $perspectiveId) {
+      field_translation
+      field_position
+      entity_client_id
+      entity_object_id
+      markup_offset
+      markup_text
+      markup_groups(gr_type: $gr_type, author: $author) {
+        type
+        author
+        created_at
+      }
+    }
+  }
+`;
 
 const TextEntityContent = ({
   entry,
@@ -40,6 +93,173 @@ const TextEntityContent = ({
   const [is_number, setIsNumber] = useState(is_order_column);
 
   const [dropped, setDropped] = useState(null);
+
+  const markups = entity.additional_metadata?.markups || [];
+  const [marking, setMarking] = useState({});
+  const [browserSelection, setBrowserSelection] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
+  const getTranslation = useContext(TranslationContext);
+
+  //const [updateMarkups] = useMutation(updateEntityMarkupMutation, { onCompleted: () => update(enti) });
+
+  const text = is_number ? number : entity.content;
+
+  useEffect(() => {
+
+    if (!browserSelection) {
+      setMarking({
+        action: null,
+        result: markups,
+        groupsToDelete: null
+      });
+      return;
+    }
+
+    const startSelection = browserSelection.startOffset;
+    const endSelection = browserSelection.endOffset;
+    const selectedText = browserSelection.selectedText;
+
+    var selected_action = null;
+    const selected_markups = [[[]]];
+    const selected_groups = [];
+
+    for (const markup of markups) {
+      
+      const [[...indexes], ...groups] = markup;
+      if (indexes.length !== 2) {
+        continue;
+      }
+      const [startMarkup, endMarkup] = indexes;
+
+      if (startMarkup <= startSelection && startSelection < endMarkup ||
+          startMarkup < endSelection && endSelection <= endMarkup ||
+          startSelection < startMarkup && endMarkup < endSelection) {
+
+        if (groups.length > 0) {
+          selected_groups.push(...groups);
+          selected_action = 'delete_with_group';
+        } else {
+          selected_action = 'delete_markup';
+        }
+
+      } else {
+        selected_markups.push(markup);
+      }
+    }
+
+    if (!selected_action && selectedText === selectedText.trim() &&
+        (startSelection === 0 || /\W/.test(text[startSelection - 1])) &&
+        (endSelection === text.length || /\W/.test(text[endSelection]))) {
+
+      selected_action = 'create_markup';
+      selected_markups.push([[startSelection, endSelection]]);
+    }
+
+    console.log(selected_action + '; groups_to_delete: ' + selected_groups);
+
+    setMarking({
+        action: selected_action,
+        result: selected_markups,
+        groupsToDelete: selected_groups
+    });
+
+  }, [browserSelection]);
+
+  const getCurrentArea = useCallback(() => document.getElementById(id), [ id ]);
+
+  const getCurrentSelection = (checkSelectedText = true) => {
+
+    if (!document.getSelection().rangeCount) {
+      return null;
+    }
+
+    const range = document.getSelection().getRangeAt(0);
+    const selectedText = range.toString();
+
+    if (checkSelectedText && selectedText.length === 0) {
+      return null;
+    }
+
+    let startContainer = range.startContainer;
+
+    // Going up to target element if we are inside e.g. <mark> tag
+    while (startContainer.parentElement.tagName !== 'DIV') {
+      startContainer = startContainer.parentElement;
+      if (!startContainer || !startContainer.parentElement) {
+        return null;
+      }
+    }
+
+    // if not "edit" mode. We can not simply check for mode value because of useEffect and EventListener specific
+    if (startContainer.parentElement.parentElement?.classList[0] !== "lingvo-input-buttons-group__name") {
+      return null;
+    }
+
+    if (getCurrentArea().contains(startContainer)) {
+      return {
+        range,
+        selectedText,
+        startContainer
+      };
+    }
+    return null;
+  }
+
+  const onBrowserSelection = () =>  {
+
+    const currentSelection = getCurrentSelection();
+
+    if (!currentSelection) {
+      return;
+    }
+
+    const {range, selectedText, startContainer} = currentSelection;
+
+    let startOffset = range.startOffset;
+    let node = startContainer.previousSibling;
+    
+    // Calculate real start offset through the all previous siblings  
+    while (!!node) {
+      startOffset += node.textContent.length;
+      node = node.previousSibling;
+    }
+
+    const endOffset = startOffset + selectedText.length;
+
+    console.log(id + ' : ' + startOffset + ' : ' + endOffset + ' : ' + selectedText);
+
+    setBrowserSelection({
+      startOffset,
+      endOffset,  
+      selectedText
+    });
+  }
+
+  const resetMarkupAction = (event) => {
+
+    if (!!getCurrentSelection((event.type !== "mousedown"))) {
+      setBrowserSelection(null);
+      console.log("Reset markup action : " + id + ' : ' + Date.now());
+    }
+  }
+
+  const markupAction = () => {
+
+    const { result, action, groupsToDelete } = marking;
+
+    if (action === 'delete_with_group') {
+      setConfirmation({
+        content: getTranslation(
+          "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?"),
+        func: () => {
+          updateMarkups({variables: {result, groupsToDelete}});
+          update(entity, undefined, result);
+        }
+      })
+    } else {
+      update(entity, undefined, result);
+    }
+  }
 
   const onEdit = useCallback(() => {
     if (!edit) {
@@ -76,7 +296,13 @@ const TextEntityContent = ({
     }
   });
 
-  const text = is_number ? number : entity.content;
+  useEffect(() => {
+    const element = getCurrentArea();
+    element?.addEventListener("mouseenter", onBrowserSelection);
+    element?.addEventListener("mouseleave", resetMarkupAction);
+    element?.children[0]?.addEventListener("mouseup", onBrowserSelection );
+    element?.children[0]?.addEventListener("mousedown", resetMarkupAction);
+  }, [ preview ]);
 
   if (checkEntries) {
     if (checkedAll) {
@@ -125,7 +351,32 @@ const TextEntityContent = ({
   const ln = /\(\d+\)/;
   const snt = /\u2260/;
   const missed = /[/]missed text[/]/;
-  const metatext = new RegExp(`${pg_ln.source}|${pg.source}|${ln.source}|${snt.source}|${missed.source}`);
+  const metatext = new RegExp(
+    [pg_ln, pg, ln, snt, missed].map(regex => regex.source).join('|'), 'g');
+
+  const highlights = [];
+
+  for (const [[...indexes], ..._] of markups) {
+
+    if (indexes.length !== 2) {
+      continue;
+    }
+    const [startMarkup, endMarkup] = indexes;
+    
+    highlights.push({
+      start: startMarkup,
+      length: endMarkup - startMarkup
+    });
+  }
+
+  let segment;
+
+  while ((segment = metatext.exec(text)) !== null) {
+    highlights.push({
+      start: segment.index,
+      length: segment[0].length
+    });
+  }
 
   switch (mode) {
     case "edit":
@@ -139,7 +390,9 @@ const TextEntityContent = ({
         >
           {!(is_being_updated || edit) && (
             <span className="lingvo-input-buttons-group__name">
-              <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+              <RangesMarker mark={highlights}>
+                {text}
+              </RangesMarker>
             </span>
           )}
           {(is_being_updated || edit) && (
@@ -156,13 +409,33 @@ const TextEntityContent = ({
                 <Button icon={<i className="lingvo-icon lingvo-icon_dnd" />} />
               </div>
               {/* new!!!!! */}
-              <Button className="lingvo-button-markup lingvo-button-markup_create" content="M" title="Create markup" />
-              <Button className="lingvo-button-markup lingvo-button-markup_delete" content="M" title="Delete markup" />
-              <Button
-                className="lingvo-button-markup lingvo-button-markup_delete"
-                content="G"
-                title="Delete markup group"
-              />
+              {marking.action === 'create_markup' && (
+                <Button 
+                  className="lingvo-button-markup lingvo-button-markup_create"
+                  content="M"
+                  title="Create markup"
+                  onClick={markupAction}
+                  disabled={is_being_updated}
+                />
+              )}
+              {marking.action === 'delete_markup' && (
+                <Button
+                  className="lingvo-button-markup lingvo-button-markup_delete"
+                  content="M"
+                  title="Delete markup"
+                  onClick={markupAction}
+                  disabled={is_being_updated}
+                />
+              )}
+              {marking.action === 'delete_with_group' && (
+                <Button
+                  className="lingvo-button-markup lingvo-button-markup_delete"
+                  content="G"
+                  title="Delete markup group"
+                  onClick={markupAction}
+                  disabled={is_being_updated}
+                />
+              )}
               {/* /new!!!!! */}
               <Button
                 icon={
@@ -189,6 +462,14 @@ const TextEntityContent = ({
               )}
             </Button.Group>
           )}
+          <Confirm
+            open={confirmation !== null}
+            header={getTranslation("Confirmation")}
+            content={confirmation ? confirmation.content : null}
+            onConfirm={confirmation ? confirmation.func : null}
+            onCancel={() => setConfirmation(null)}
+            className="lingvo-confirm"
+          />
         </div>
       ) : null;
     case "publish":
