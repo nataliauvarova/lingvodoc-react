@@ -117,13 +117,20 @@ const TextEntityContent = ({
 
     const startSelection = browserSelection.startOffset;
     const endSelection = browserSelection.endOffset;
+    const selectedText = browserSelection.selectedText;
 
     var selected_action = null;
-    const selected_markups = [];
+    const selected_markups = [[[]]];
     const selected_groups = [];
 
     for (const markup of markups) {
-      const [[startMarkup, endMarkup], ...groups] = markup;
+      
+      const [[...indexes], ...groups] = markup;
+      if (indexes.length !== 2) {
+        continue;
+      }
+      const [startMarkup, endMarkup] = indexes;
+
       if (startMarkup <= startSelection && startSelection < endMarkup ||
           startMarkup < endSelection && endSelection <= endMarkup ||
           startSelection < startMarkup && endMarkup < endSelection) {
@@ -140,7 +147,7 @@ const TextEntityContent = ({
       }
     }
 
-    if (!selected_action &&
+    if (!selected_action && selectedText === selectedText.trim() &&
         (startSelection === 0 || /\W/.test(text[startSelection - 1])) &&
         (endSelection === text.length || /\W/.test(text[endSelection]))) {
 
@@ -167,9 +174,9 @@ const TextEntityContent = ({
     }
 
     const range = document.getSelection().getRangeAt(0);
-    const selectedText = range.toString().trim();
+    const selectedText = range.toString();
 
-    if (checkSelectedText && (selectedText.length === 0 || selectedText !== range.toString())) {
+    if (checkSelectedText && selectedText.length === 0) {
       return null;
     }
 
@@ -349,7 +356,13 @@ const TextEntityContent = ({
 
   const highlights = [];
 
-  for (const [[startMarkup, endMarkup], ..._] of markups) {
+  for (const [[...indexes], ..._] of markups) {
+
+    if (indexes.length !== 2) {
+      continue;
+    }
+    const [startMarkup, endMarkup] = indexes;
+    
     highlights.push({
       start: startMarkup,
       length: endMarkup - startMarkup
@@ -397,9 +410,9 @@ const TextEntityContent = ({
                   icon={ is_being_updated
                     ? <i className="lingvo-icon lingvo-icon_spinner" />
                     : marking.action === 'delete_markup'
-                    ? <i className="lingvo-icon lingvo-icon_minus" />
-                    : marking.action === 'delete_with_group'
                     ? <i className="lingvo-icon lingvo-icon_trash" />
+                    : marking.action === 'delete_with_group'
+                    ? <i className="lingvo-icon lingvo-icon_trash2" />
                     : <i className="lingvo-icon lingvo-icon_plus" />
                   }
                   onClick={markupAction}
