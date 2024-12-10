@@ -151,7 +151,7 @@ const TextEntityContent = ({
         (startSelection === 0 || /\W/.test(text[startSelection - 1])) &&
         (endSelection === text.length || /\W/.test(text[endSelection]))) {
 
-      selected_action = 'create';
+      selected_action = 'create_markup';
       selected_markups.push([[startSelection, endSelection]]);
     }
 
@@ -405,32 +405,37 @@ const TextEntityContent = ({
           )}
           {read_only || (
             <Button.Group basic icon className="lingvo-buttons-group">
-              { marking.action && (
-                <Button
-                  icon={ is_being_updated
-                    ? <i className="lingvo-icon lingvo-icon_spinner" />
-                    : marking.action === 'delete_markup'
-                    ? <i className="lingvo-icon lingvo-icon_trash" />
-                    : marking.action === 'delete_with_group'
-                    ? <i className="lingvo-icon lingvo-icon_trash2" />
-                    : <i className="lingvo-icon lingvo-icon_plus" />
-                  }
-                  onClick={markupAction}
-                  disabled={is_being_updated}
-                  className={is_being_updated ? "lingvo-button-spinner" : ""}
-                />
-              )}
               <div ref={dragRef} className="lingvo-buttons-group__drag">
                 <Button icon={<i className="lingvo-icon lingvo-icon_dnd" />} />
               </div>
               {/* new!!!!! */}
-              <Button className="lingvo-button-markup lingvo-button-markup_create" content="M" title="Create markup" />
-              <Button className="lingvo-button-markup lingvo-button-markup_delete" content="M" title="Delete markup" />
-              <Button
-                className="lingvo-button-markup lingvo-button-markup_delete"
-                content="G"
-                title="Delete markup group"
-              />
+              {marking.action === 'create_markup' && (
+                <Button 
+                  className="lingvo-button-markup lingvo-button-markup_create"
+                  content="M"
+                  title="Create markup"
+                  onClick={markupAction}
+                  disabled={is_being_updated}
+                />
+              )}
+              {marking.action === 'delete_markup' && (
+                <Button
+                  className="lingvo-button-markup lingvo-button-markup_delete"
+                  content="M"
+                  title="Delete markup"
+                  onClick={markupAction}
+                  disabled={is_being_updated}
+                />
+              )}
+              {marking.action === 'delete_with_group' && (
+                <Button
+                  className="lingvo-button-markup lingvo-button-markup_delete"
+                  content="G"
+                  title="Delete markup group"
+                  onClick={markupAction}
+                  disabled={is_being_updated}
+                />
+              )}
               {/* /new!!!!! */}
               <Button
                 icon={
