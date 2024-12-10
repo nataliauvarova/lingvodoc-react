@@ -179,7 +179,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 </Form>
 
                 <Button
-                  content={getTranslation("Join")}
+                  content={getTranslation("Attach")}
                   onClick={onAddRelation}
                   className="lingvo-button-greenest"
                   disabled={!joinActive}
