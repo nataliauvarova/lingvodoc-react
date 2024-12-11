@@ -88,15 +88,15 @@ const TextEntityContent = ({
     const selectedText = browserSelection.selectedText;
 
     var selected_action = null;
-    const selected_markups = [[[]]];
+    const selected_markups = [[]];
     const selected_groups = [];
 
     // 'markups' variable has the following format:
     // [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
     for (const markup of markups) {
 
-      const [[...indexes], ...groups] = markup;
-      if (indexes.length !== 2) {
+      const [indexes, ...groups] = markup;
+      if (!indexes || indexes.length !== 2) {
         continue;
       }
       const [startMarkup, endMarkup] = indexes;
@@ -328,9 +328,9 @@ const TextEntityContent = ({
 
   const highlights = [];
 
-  for (const [[...indexes], ..._] of markups) {
+  for (const [indexes, ..._] of markups) {
 
-    if (indexes.length !== 2) {
+    if (!indexes || indexes.length !== 2) {
       continue;
     }
     const [startMarkup, endMarkup] = indexes;
