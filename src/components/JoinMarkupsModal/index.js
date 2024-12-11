@@ -66,7 +66,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
         ...markup_data
       } = markup;
 
-      const f_id = f_pos, f_name;
+      const f_id = [f_pos, f_name];
 
       if (!(f_id in markupDict)) {
         markupDict[f_id] = [];
@@ -81,7 +81,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
           ...group_data
         } = group;
 
-        const g_id = client_id, object_id;
+        const g_id = [client_id, object_id];
 
         if (!(g_id in groupDict)) {
           groupDict[g_id] = { ...group_data, markups: [] };
