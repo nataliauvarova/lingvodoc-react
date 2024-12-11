@@ -13,21 +13,11 @@ import { gql } from "@apollo/client";
 
 import Entities from "./index";
 
-// 'result' has the following format:
-// [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
-const updateEntityMarkupMutation = gql`
-  mutation updateEntityMarkup($entityId: LingvodocID!, $result: [[LingvodocID]]!, $groupsToDelete: [LingvodocID]) {
-    update_entity_markup(id: $entityId, result: $result, groups_to_delete: $groupsToDelete) {
-      triumph
-    }
-  }
-`;
-
 // Entities' additional metadata should be updated as well
 // 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
 const createMarkupGroupMutation = gql`
-  mutation createMarkupGroup($gr_type: String!, $markups: [[Int]]) {
-    create_markup_group(gr_type: $gr_type, markups: $markups) {
+  mutation createMarkupGroup($groupType: String!, $markups: [[Int]]) {
+    create_markup_group(gr_type: $groupType, markups: $markups) {
       triumph
     }
   }
@@ -38,26 +28,6 @@ const deleteMarkupGroupMutation = gql`
   mutation deleteMarkupGroup($groupId: LingvodocID!, $markups: [[Int]], $perspectiveId: LingvodocID) {
     delete_markup_group(group_id: $groupId, markups: $markups, perspective_id: $perspectiveId) {
       triumph
-    }
-  }
-`;
-
-// Using this query we get data for single markups and for existent groups
-// We have to control broken groups and clean markups of them
-const getMarkupTreeQuery = gql`
-  query getMarkupTree($perspectiveId: LingvodocID!, $gr_type: String, $author: Int) {
-    markups(id: $perspectiveId) {
-      field_translation
-      field_position
-      entity_client_id
-      entity_object_id
-      markup_offset
-      markup_text
-      markup_groups(gr_type: $gr_type, author: $author) {
-        type
-        author
-        created_at
-      }
     }
   }
 `;
@@ -100,8 +70,6 @@ const TextEntityContent = ({
   const [confirmation, setConfirmation] = useState(null);
   const getTranslation = useContext(TranslationContext);
 
-  //const [updateMarkups] = useMutation(updateEntityMarkupMutation, { onCompleted: () => update(enti) });
-
   const text = is_number ? number : entity.content;
 
   useEffect(() => {
@@ -123,8 +91,10 @@ const TextEntityContent = ({
     const selected_markups = [[[]]];
     const selected_groups = [];
 
+    // 'markups' variable has the following format:
+    // [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
     for (const markup of markups) {
-      
+
       const [[...indexes], ...groups] = markup;
       if (indexes.length !== 2) {
         continue;
@@ -252,7 +222,9 @@ const TextEntityContent = ({
         content: getTranslation(
           "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?"),
         func: () => {
-          updateMarkups({variables: {result, groupsToDelete}});
+          for (groupId of groupsToDelete) {
+            deleteMarkupGroup({variables: {groupId, perspectiveId}});
+          }
           update(entity, undefined, result);
         }
       })

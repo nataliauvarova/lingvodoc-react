@@ -2,11 +2,36 @@ import React, { useCallback, useContext, useState } from "react";
 import { Button, Checkbox, Form, Modal, Table } from "semantic-ui-react";
 import { isEqual } from "lodash";
 import PropTypes from "prop-types";
+import { gql, useQuery } from "@apollo/client";
 
 import TranslationContext from "Layout/TranslationContext";
 
 import "./styles.scss";
 
+// Using this query we get data for single markups and for existent groups
+// We have to control broken groups and clean markups of them
+const getMarkupTreeQuery = gql`
+  query getMarkupTree($perspectiveId: LingvodocID!) {
+    markups(perspective_id: $perspectiveId) {
+      field_translation
+      field_position
+      entity_client_id
+      entity_object_id
+      markup_offset
+      markup_text
+    }
+  }
+`;
+
+/*  , $groupType: String, $author: Int) {
+      markup_groups(gr_type: $groupType, author: $author) {
+        client_id
+        object_id
+        type
+        author
+        created_at
+      }
+*/
 const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const getTranslation = useContext(TranslationContext);
 
@@ -18,6 +43,10 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const [deleteActive, setDeleteActive] = useState(false);
 
   const [selectedRelations, setSelectedRelations] = useState([]);
+
+  const {data, error, loading, refetch} = useQuery(getMarkupTreeQuery, {
+    variables: { perspectiveId }
+  });
 
   const onAddRelation = useCallback(
     /*newMetadata*/ () => {
