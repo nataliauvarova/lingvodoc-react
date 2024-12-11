@@ -11,7 +11,7 @@ import "./styles.scss";
 // Using this query we get data for single markups and for existent groups
 // We have to control broken groups and clean markups of them
 const getMarkupTreeQuery = gql`
-  query getMarkupTree($perspectiveId: LingvodocID!) {
+  query getMarkupTree($perspectiveId: LingvodocID!, $groupType: String, $author: Int) {
     markups(perspective_id: $perspectiveId) {
       field_translation
       field_position
@@ -19,19 +19,18 @@ const getMarkupTreeQuery = gql`
       entity_object_id
       markup_offset
       markup_text
-    }
-  }
-`;
-
-/*  , $groupType: String, $author: Int) {
       markup_groups(gr_type: $groupType, author: $author) {
         client_id
         object_id
         type
-        author
+        author_id
+        author_name
         created_at
       }
-*/
+    }
+  }
+`;
+
 const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const getTranslation = useContext(TranslationContext);
 
@@ -44,10 +43,55 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
 
   const [selectedRelations, setSelectedRelations] = useState([]);
 
+  const [markupDict, setMarkupDict] = useState({});
+  const [groupDict, setGroupDict] = useState({});
+
   const {data, error, loading, refetch} = useQuery(getMarkupTreeQuery, {
     variables: { perspectiveId },
-    fetchPolicy: "network-only"
+    fetchPolicy: "network-only",
+    onCompleted: data => setRelationDict(data.markups)
   });
+
+  const setRelationDict = markups => {
+
+    const markupDict = {};
+    const groupDict = {};
+
+    for (const markup of markups) {
+
+      const {
+        field_position: f_pos,
+        field_translation: f_name,
+        markup_groups: groups,
+        ...markup_data
+      } = markup;
+
+      const f_id = f_pos, f_name;
+
+      if (!(f_id in markupDict)) {
+        markupDict[f_id] = [];
+      }
+      markupDict[f_id].push(markup_data);
+
+      for (const group of groups) {
+
+        const {
+          client_id,
+          object_id,
+          ...group_data
+        } = group;
+
+        const g_id = client_id, object_id;
+
+        if (!(g_id in groupDict)) {
+          groupDict[g_id] = { ...group_data, markups: [] };
+        }
+        groupDict[g_id][markups].push(markup_data);
+      }
+    }
+    setMarkupDict(markupDict);
+    setGroupDict(groupDict);
+  }
 
   const onAddRelation = useCallback(
     /*newMetadata*/ () => {
