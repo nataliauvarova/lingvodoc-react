@@ -836,6 +836,7 @@ export const stringsToTranslate = [
   "singular",
   "Skipping text output, too long.",
   "software for morphological analysis of glossed corpora, in particular, automatic identification of government models",
+  "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?",
   "Sort by acceptance",
   "Sort by cases",
   "Sort by verbs",
