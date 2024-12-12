@@ -45,7 +45,8 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const [selectedRelations, setSelectedRelations] = useState([]);
 
   const {data, error, loading, refetch} = useQuery(getMarkupTreeQuery, {
-    variables: { perspectiveId }
+    variables: { perspectiveId },
+    fetchPolicy: "network-only"
   });
 
   const onAddRelation = useCallback(
