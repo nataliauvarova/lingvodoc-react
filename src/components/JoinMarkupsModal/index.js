@@ -21,7 +21,7 @@ const getMarkupTreeQuery = gql`
       field_position
       entity_client_id
       entity_object_id
-      markup_groups(gr_type: $groupType, author: $author) {
+      markup_groups(group_type: $groupType, author: $author) {
         client_id
         object_id
         type
@@ -36,8 +36,8 @@ const getMarkupTreeQuery = gql`
 // Entities' additional metadata should be updated as well
 // 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
 const createMarkupGroupMutation = gql`
-  mutation createMarkupGroup($groupType: String!, $markups: [[Int]]) {
-    create_markup_group(gr_type: $groupType, markups: $markups) {
+  mutation createMarkupGroup($groupType: String!, $markups: [[Int]], $perspectiveId: LingvodocID!) {
+    create_markup_group(group_type: $groupType, markups: $markups, perspective_id: $perspectiveId) {
       triumph
     }
   }
@@ -133,7 +133,8 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
     createMarkupGroup({
       variables: {
         groupType: typeRelation,
-        markups: [firstTextRelation.split('_'), secondTextRelation.split('_')]
+        markups: [firstTextRelation.split('_'), secondTextRelation.split('_')],
+        perspectiveId
       }
     }).then(refetch);
 
@@ -356,7 +357,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
 JoinMarkupsModal.propTypes = {
   perspectiveId: PropTypes.arrayOf(PropTypes.number).isRequired,
   mode: PropTypes.string.isRequired,
-  relations: PropTypes.array.isRequired,
+  //relations: PropTypes.array.isRequired,
   onClose: PropTypes.func.isRequired
 };
 
