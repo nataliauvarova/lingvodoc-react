@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { Button, Checkbox, Form, Modal, Table } from "semantic-ui-react";
+import { Button, Checkbox, Form, Modal, Table, Message } from "semantic-ui-react";
 import { isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { useMutation } from "hooks";
@@ -19,8 +19,6 @@ const getMarkupTreeQuery = gql`
       offset
       field_translation
       field_position
-      entity_client_id
-      entity_object_id
       markup_groups(group_type: $groupType, author: $author) {
         client_id
         object_id
@@ -67,6 +65,10 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
   const [markupDict, setMarkupDict] = useState({});
   const [groupDict, setGroupDict] = useState({});
 
+  const [warnMessage, setWarnMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+
   const {data, error, loading, refetch} = useQuery(getMarkupTreeQuery, {
     variables: { perspectiveId },
     fetchPolicy: "network-only",
@@ -75,6 +77,12 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
 
   const [createMarkupGroup] = useMutation(createMarkupGroupMutation);
   const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation);
+
+  const resetMessages = () => {
+    setWarnMessage(null);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  }
 
   const setRelationDict = markups => {
 
@@ -108,9 +116,9 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
         const g_id = `${client_id}_${object_id}`;
 
         if (!(g_id in groupDict)) {
-          groupDict[g_id] = { ...group_data, markups: [] };
+          groupDict[g_id] = { ...group_data, 'markups': [] };
         }
-        groupDict[g_id][markups].push(markup_data);
+        groupDict[g_id]['markups'].push(markup_data);
       }
     }
 
@@ -120,14 +128,26 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
 
     setMarkupDict(markupDict);
     setGroupDict(groupDict);
-    //setFieldNames(Object.keys(markupDict).map(([pos, name]) => name));
   }
 
   const onAddRelation = useCallback(() => {
     console.log("onAddRelation!!!!!!!");
 
+    resetMessages();
+
     if (!firstTextRelation || !secondTextRelation || !typeRelation) {
-      return;
+      throw new Error("No either two markups or relation type is selected.");
+    }
+
+    for (const group of Object.values(groupDict)) {
+      const ids = group['markups'].map(markup => markup.id);
+      if (ids.includes(firstTextRelation) &&
+          ids.includes(secondTextRelation) &&
+          group.type === typeRelation) {
+
+        setWarnMessage("Such group already exists.");
+        return;
+      }
     }
 
     createMarkupGroup({
@@ -141,6 +161,8 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
     setFirstTextRelation(null);
     setSecondTextRelation(null);
     setTypeRelation(null);
+
+    setSuccessMessage("The new group was successfully added.");
 
   }, [firstTextRelation, secondTextRelation, typeRelation]);
 
@@ -223,7 +245,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                       return (
                         <Table.Row key={markup.id}>
                           <Table.Cell
-                            onClick={e => setFirstTextRelation(markup.id)}
+                            onClick={e => { setFirstTextRelation(markup.id); resetMessages(); }}
                             className={(markup.id === firstTextRelation && "selected-text-relation") || ""}
                           >
                             {markup.text}
@@ -249,7 +271,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                       return (
                         <Table.Row key={markup.id}>
                           <Table.Cell
-                            onClick={e => setSecondTextRelation(markup.id)}
+                            onClick={e => { setSecondTextRelation(markup.id); resetMessages(); }}
                             className={(markup.id === secondTextRelation && "selected-text-relation") || ""}
                           >
                             {markup.text}
@@ -280,7 +302,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                     key="Translit"
                     value="Translit"
                     checked={typeRelation === "Translit"}
-                    onChange={(e, { value }) => setTypeRelation(value)}
+                    onChange={(e, { value }) => { setTypeRelation(value); resetMessages(); }}
                     className="lingvo-radio"
                   />
 
@@ -290,7 +312,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                     key="LiteralTranslation"
                     value="LiteralTranslation"
                     checked={typeRelation === "LiteralTranslation"}
-                    onChange={(e, { value }) => setTypeRelation(value)}
+                    onChange={(e, { value }) => { setTypeRelation(value); resetMessages(); }}
                     className="lingvo-radio"
                   />
                 </Form>
@@ -313,32 +335,49 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
             {/* /Table Markups */}
           </div>
 
+          { warnMessage && (
+            <Message warning>
+              <Message.Header>{getTranslation("Warning")}</Message.Header>
+              <p>
+                {getTranslation(warnMessage)}
+              </p>
+            </Message>
+          )}
+          { successMessage && (
+            <Message positive>
+              <Message.Header>{getTranslation("Success")}</Message.Header>
+              <p>
+                {getTranslation(successMessage)}
+              </p>
+            </Message>
+          )}
+
           <div className="join-markups-content__relations">
             {/* Table Relations */}
             <Table celled padded className="lingvo-perspective-table">
               <Table.Header>
                 <Table.Row>
                   <Table.HeaderCell className="th-checkbox">&nbsp;</Table.HeaderCell>
-                  <Table.HeaderCell>{getTranslation("Left text")}</Table.HeaderCell>
-                  <Table.HeaderCell>{getTranslation("Right text")}</Table.HeaderCell>
-                  <Table.HeaderCell>{getTranslation("Type")}</Table.HeaderCell>
-                  <Table.HeaderCell>{getTranslation("Author")}</Table.HeaderCell>
+                  <Table.HeaderCell> {firstField.split('_')[1]} </Table.HeaderCell>
+                  <Table.HeaderCell> {secondField.split('_')[1]} </Table.HeaderCell>
+                  <Table.HeaderCell> {getTranslation("Type")} </Table.HeaderCell>
+                  <Table.HeaderCell> {getTranslation("Author")} </Table.HeaderCell>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {relations.map(relation => (
-                  <Table.Row key={relation.id}>
+                {Object.keys(groupDict).map(group_id => (
+                  <Table.Row key={group_id}>
                     <Table.Cell>
                       <Checkbox
                         className="lingvo-checkbox"
                         //checked={selectedRelations.find(e => isEqual(e, relation.id))}
-                        onChange={(e, { checked }) => onRelationSelect(relation.id, checked)}
+                        onChange={(e, { checked }) => onRelationSelect(group_id, checked)}
                       />
                     </Table.Cell>
-                    <Table.Cell>Left text</Table.Cell>
-                    <Table.Cell>Right text</Table.Cell>
-                    <Table.Cell>Type</Table.Cell>
-                    <Table.Cell>Author</Table.Cell>
+                    <Table.Cell> {groupDict[group_id].markups[0].text} </Table.Cell>
+                    <Table.Cell> {groupDict[group_id].markups[1].text} </Table.Cell>
+                    <Table.Cell> {groupDict[group_id].type} </Table.Cell>
+                    <Table.Cell> {groupDict[group_id].author_name} </Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
