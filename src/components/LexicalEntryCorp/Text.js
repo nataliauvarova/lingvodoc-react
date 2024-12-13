@@ -8,6 +8,7 @@ import { find, isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
 //import { patienceDiff } from "utils/patienceDiff";
+import { deleteMarkupGroupMutation } from "components/JoinMarkupsModal";
 import { useMutation } from "hooks";
 import { gql } from "@apollo/client";
 
@@ -45,13 +46,15 @@ const TextEntityContent = ({
 
   const [dropped, setDropped] = useState(null);
 
-  const markups = entity.additional_metadata?.markups || [];
   const [marking, setMarking] = useState({});
   const [browserSelection, setBrowserSelection] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+
+  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation);
   const getTranslation = useContext(TranslationContext);
 
   const text = is_number ? number : entity.content;
+  const markups = entity.additional_metadata?.markups || [];
 
   useEffect(() => {
     if (!browserSelection) {
@@ -74,7 +77,7 @@ const TextEntityContent = ({
     // 'markups' variable has the following format:
     // [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
     for (const markup of markups) {
-      
+
       const [indexes, ...groups] = markup;
       if (!indexes || indexes.length !== 2) {
         continue;
@@ -200,10 +203,8 @@ const TextEntityContent = ({
           "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?"
         ),
         func: () => {
-          for (groupId of groupsToDelete) {
-            deleteMarkupGroup({ variables: { groupId, perspectiveId } });
-          }
           update(entity, undefined, result);
+          deleteMarkupGroup({variables: {groupIds: groupsToDelete, perspectiveId}});
         }
       });
     } else {

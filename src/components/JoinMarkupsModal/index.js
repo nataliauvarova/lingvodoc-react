@@ -42,9 +42,9 @@ const createMarkupGroupMutation = gql`
 `;
 
 // 'markups' has the following format: [[  ], ... ]
-const deleteMarkupGroupMutation = gql`
-  mutation deleteMarkupGroup($groupId: LingvodocID!, $markups: [[Int]], $perspectiveId: LingvodocID) {
-    delete_markup_group(group_id: $groupId, markups: $markups, perspective_id: $perspectiveId) {
+export const deleteMarkupGroupMutation = gql`
+  mutation deleteMarkupGroup($groupIds: [LingvodocID]!, $markups: [[Int]], $perspectiveId: LingvodocID) {
+    delete_markup_group(group_ids: $groupIds, markups: $markups, perspective_id: $perspectiveId) {
       triumph
     }
   }
