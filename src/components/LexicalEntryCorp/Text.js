@@ -373,7 +373,7 @@ const TextEntityContent = ({
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_create"
                   content="M"
-                  title="Create markup"
+                  title={getTranslation("Create markup")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />
@@ -382,7 +382,7 @@ const TextEntityContent = ({
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_delete"
                   content="M"
-                  title="Delete markup"
+                  title={getTranslation("Delete markup")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />
@@ -391,7 +391,7 @@ const TextEntityContent = ({
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_delete"
                   content="G"
-                  title="Delete markup group"
+                  title={getTranslation("Delete markup group")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />

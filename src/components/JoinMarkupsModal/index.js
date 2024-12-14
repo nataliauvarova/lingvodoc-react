@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { Button, Checkbox, Form, Modal, Table, Message } from "semantic-ui-react";
+import { Button, Checkbox, Form, Modal, Table, Message, Label } from "semantic-ui-react";
 import { isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { useMutation } from "hooks";
@@ -65,6 +65,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
 
   const [markupDict, setMarkupDict] = useState({});
   const [groupDict, setGroupDict] = useState({});
+  const [groupTotal, setGroupTotal] = useState(0);
 
   const [warnMessage, setWarnMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -89,6 +90,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
 
     const markupDict = {};
     const groupDict = {};
+    let total = 0;
 
     for (const markup of markups) {
 
@@ -120,6 +122,10 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
           groupDict[g_id] = { ...group_data, 'markups': [] };
         }
         groupDict[g_id]['markups'].push(markup_data);
+
+        if (groupDict[g_id]['markups'].length === 2) {
+          total++;
+        }
       }
     }
 
@@ -129,6 +135,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
 
     setMarkupDict(markupDict);
     setGroupDict(groupDict);
+    setGroupTotal(total);
   }
 
   const onAddRelation = useCallback(() => {
@@ -164,7 +171,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
     setTypeRelation(null);
     setIsDirty(true);
 
-    setSuccessMessage("The new group was successfully added.");
+    setSuccessMessage("The group was successfully added.");
 
   }, [firstTextRelation, secondTextRelation, typeRelation]);
 
@@ -392,6 +399,9 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
         </div>
       </Modal.Content>
       <Modal.Actions>
+        <Label color="teal" style={{float: "left"}}>
+          {`${getTranslation("Total")}: ${groupTotal}`}
+        </Label>
         <Button content={getTranslation("Close")} onClick={onCleverClose} className="lingvo-button-basic-black" />
       </Modal.Actions>
     </Modal>
