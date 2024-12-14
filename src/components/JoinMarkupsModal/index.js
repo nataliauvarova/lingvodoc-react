@@ -50,7 +50,7 @@ export const deleteMarkupGroupMutation = gql`
   }
 `;
 
-const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
+const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const getTranslation = useContext(TranslationContext);
 
   const [firstTextRelation, setFirstTextRelation] = useState(null);
@@ -395,8 +395,6 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
 
 JoinMarkupsModal.propTypes = {
   perspectiveId: PropTypes.arrayOf(PropTypes.number).isRequired,
-  mode: PropTypes.string.isRequired,
-  //relations: PropTypes.array.isRequired,
   onClose: PropTypes.func.isRequired
 };
 

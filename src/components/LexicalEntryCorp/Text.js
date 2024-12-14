@@ -170,16 +170,19 @@ const TextEntityContent = ({
           startMarkup < endSelection && endSelection <= endMarkup ||
           startSelection < startMarkup && endMarkup < endSelection) {
 
+        selected_action = 'delete_markup';
+
         if (groups.length > 0) {
           selected_groups.push(...groups);
-          selected_action = 'delete_with_group';
-        } else {
-          selected_action = 'delete_markup';
         }
 
       } else {
         selected_markups.push(markup);
       }
+    }
+
+    if (selected_groups.length) {
+      selected_action = 'delete_with_group';
     }
 
     if (!selected_action && selectedText === selectedText.trim() &&
@@ -210,13 +213,15 @@ const TextEntityContent = ({
           "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?"
         ),
         func: () => {
-          update(entity, undefined, result);
+          setConfirmation(null);
           deleteMarkupGroup({variables: {groupIds: groupsToDelete, perspectiveId: entry.parent_id}});
+          update(entity, undefined, result);
         }
       });
     } else {
       update(entity, undefined, result);
     }
+    setBrowserSelection(null);
   };
 
   const onEdit = useCallback(() => {

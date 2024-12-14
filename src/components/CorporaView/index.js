@@ -18,7 +18,7 @@ import JoinMarkupsModal from "components/JoinMarkupsModal";
 /* /new!!!!!! */
 import Pagination from "components/Pagination";
 import Placeholder from "components/Placeholder";
-import { openModal } from "ducks/modals";
+import { openModal, closeModal } from "ducks/modals";
 import {
   addLexicalEntry,
   resetEntriesSelection,
@@ -371,6 +371,7 @@ class P extends React.Component {
       selectLexicalEntry: onEntrySelect,
       resetEntriesSelection: resetSelection,
       openModal: openNewModal,
+      closeModal: closeNewModal,
       createdEntries,
       selectedEntries,
       user,
@@ -558,7 +559,13 @@ class P extends React.Component {
 
     /* new!!!! */
     const onJoinMarkups = () => {
-      openNewModal(JoinMarkupsModal, { perspectiveId: id, mode, relations: entries });
+      openNewModal(JoinMarkupsModal, {
+        perspectiveId: id,
+        onClose: () => {
+          closeNewModal(JoinMarkupsModal);
+          data.refetch();
+        }
+      });
     };
     /* /new!!!! */
 
@@ -1108,6 +1115,7 @@ P.propTypes = {
   selectLexicalEntry: PropTypes.func.isRequired,
   resetEntriesSelection: PropTypes.func.isRequired,
   openModal: PropTypes.func.isRequired,
+  closeModal: PropTypes.func.isRequired,
   createdEntries: PropTypes.array.isRequired,
   selectedEntries: PropTypes.array.isRequired,
   user: PropTypes.object.isRequired,
@@ -1136,7 +1144,8 @@ const PerspectiveView = compose(
           resetSortByField: resetOrderedSortByField,
           selectLexicalEntry,
           resetEntriesSelection,
-          openModal
+          openModal,
+          closeModal
         },
         dispatch
       )
