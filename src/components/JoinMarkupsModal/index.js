@@ -50,7 +50,7 @@ export const deleteMarkupGroupMutation = gql`
   }
 `;
 
-const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
+const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
   const getTranslation = useContext(TranslationContext);
 
   const [firstTextRelation, setFirstTextRelation] = useState(null);
@@ -59,6 +59,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   const joinActive = firstTextRelation && secondTextRelation && typeRelation;
   const [deleteActive, setDeleteActive] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const [selectedRelations, setSelectedRelations] = useState([]);
 
@@ -161,6 +162,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setFirstTextRelation(null);
     setSecondTextRelation(null);
     setTypeRelation(null);
+    setIsDirty(true);
 
     setSuccessMessage("The new group was successfully added.");
 
@@ -170,6 +172,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     console.log("onDeleteRelation!!!!!!!");
     console.log("Их будем удалять: selectedRelations====");
     console.log(selectedRelations);
+    setIsDirty(true);
   }, []);
 
   const onRelationSelect = useCallback((relation_id, checked) => {
@@ -198,6 +201,8 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setDeleteActive(selectedIds.length > 0);
   }, []);
 
+  const onCleverClose = isDirty ? onCloseUpdate : onClose;
+
   /*console.log("perspectiveId====");
   console.log(perspectiveId);
 
@@ -224,7 +229,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const secondField = Object.keys(markupDict)[1];
 
   return (
-    <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
+    <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onCleverClose} size="fullscreen">
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
       <Modal.Content>
         <div className="join-markups-content">
@@ -387,7 +392,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
         </div>
       </Modal.Content>
       <Modal.Actions>
-        <Button content={getTranslation("Close")} onClick={onClose} className="lingvo-button-basic-black" />
+        <Button content={getTranslation("Close")} onClick={onCleverClose} className="lingvo-button-basic-black" />
       </Modal.Actions>
     </Modal>
   );
@@ -395,6 +400,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
 JoinMarkupsModal.propTypes = {
   perspectiveId: PropTypes.arrayOf(PropTypes.number).isRequired,
+  onCloseUpdate: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired
 };
 

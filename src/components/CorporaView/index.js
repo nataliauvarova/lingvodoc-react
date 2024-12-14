@@ -563,6 +563,9 @@ class P extends React.Component {
         perspectiveId: id,
         onClose: () => {
           closeNewModal(JoinMarkupsModal);
+        },
+        onCloseUpdate: () => {
+          closeNewModal(JoinMarkupsModal);
           data.refetch();
         }
       });
