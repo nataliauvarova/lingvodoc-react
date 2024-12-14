@@ -365,7 +365,7 @@ const JoinMarkupsModal = ({ perspectiveId, mode, relations, onClose }) => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {Object.keys(groupDict).map(group_id => (
+                {Object.keys(groupDict).map(group_id => groupDict[group_id].markups.length > 1 && (
                   <Table.Row key={group_id}>
                     <Table.Cell>
                       <Checkbox
