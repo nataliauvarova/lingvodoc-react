@@ -125,7 +125,8 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
     }
 
     if (Object.keys(markupDict).length < 2) {
-      throw new Error("At least two fields are required!");
+      onClose();
+      throw new Error("Please set markups in both fields of the table");
     }
 
     setMarkupDict(markupDict);
@@ -135,7 +136,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
 
   const {data, error, loading, refetch} = useQuery(getMarkupTreeQuery, {
     variables: { perspectiveId },
-    //fetchPolicy: "network-only",
+    fetchPolicy: "network-only",
     onCompleted: data => setRelationDict(data.markups)
   });
 
