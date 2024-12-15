@@ -131,7 +131,13 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
     setMarkupDict(markupDict);
     setGroupDict(groupDict);
     setGroupTotal(total);
-  }
+  };
+
+  const {data, error, loading, refetch} = useQuery(getMarkupTreeQuery, {
+    variables: { perspectiveId },
+    //fetchPolicy: "network-only",
+    onCompleted: data => setRelationDict(data.markups)
+  });
 
   const onAddRelation = useCallback(() => {
     //console.log("onAddRelation!!!!!!!");
@@ -249,6 +255,9 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
   const firstField = Object.keys(markupDict)[0];
   const secondField = Object.keys(markupDict)[1];
 
+  const firstText = markupDict[firstField].map(m => m.id === firstTextRelation ? m.text : "");
+  const secondText = markupDict[secondField].map(m => m.id === secondTextRelation ? m.text : "");
+
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onCleverClose} size="fullscreen">
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
@@ -267,7 +276,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
                     <Table.Header>
                       <Table.Row>
                         <Table.HeaderCell>
-                          {firstField.split('_')[1]}: {firstTextRelation}
+                          {firstField.split('_')[1]}: {firstText}
                         </Table.HeaderCell>
                       </Table.Row>
                     </Table.Header>
@@ -293,7 +302,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
                     <Table.Header>
                       <Table.Row>
                         <Table.HeaderCell>
-                          {secondField.split('_')[1]}: {secondTextRelation}
+                          {secondField.split('_')[1]}: {secondText}
                         </Table.HeaderCell>
                       </Table.Row>
                     </Table.Header>
