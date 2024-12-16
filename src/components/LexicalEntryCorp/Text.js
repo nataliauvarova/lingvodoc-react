@@ -247,7 +247,7 @@ const TextEntityContent = ({
   // useDrag - the list item is draggable
   const [{ isDragging }, dragRef, preview] = useDrag({
     type: "entity",
-    item: { id, content },
+    item: { id, content, metadata: entity.additional_metadata },
     collect: monitor => ({
       isDragging: monitor.isDragging()
     }),
