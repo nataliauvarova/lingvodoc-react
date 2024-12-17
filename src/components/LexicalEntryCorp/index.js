@@ -68,7 +68,7 @@ const removeEntityMutation = gql`
 `;
 
 const updateEntityMutation = gql`
-  mutation updateEntity($id: LingvodocID!, $content: String!, $markups: [[LingvodocID]]) {
+  mutation updateEntity($id: LingvodocID!, $content: String!, $markups: [ObjectVal]) {
     update_entity_content(id: $id, content: $content, markups: $markups) {
       triumph
     }

@@ -161,7 +161,7 @@ const TextEntityContent = ({
     const selectedText = browserSelection.selectedText;
 
     var selected_action = null;
-    const selected_markups = [[]];
+    const selected_markups = [];
     const selected_groups = [];
 
     // 'markups' variable has the following format:
