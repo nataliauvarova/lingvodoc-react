@@ -8,9 +8,9 @@ import { find, isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
 //import { patienceDiff } from "utils/patienceDiff";
-import { deleteMarkupGroupMutation } from "components/JoinMarkupsModal";
+import { deleteMarkupGroupMutation, refetchLexicalEntries } from "components/JoinMarkupsModal";
 import { useMutation } from "hooks";
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 
 import Entities from "./index";
 
@@ -50,7 +50,10 @@ const TextEntityContent = ({
   const [browserSelection, setBrowserSelection] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
 
-  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation);
+  const client = useApolloClient();
+  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation,
+    {onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)});
+
   const getTranslation = useContext(TranslationContext);
 
   const text = is_number ? number : entity.content;

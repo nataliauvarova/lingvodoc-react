@@ -75,7 +75,7 @@ const updateEntityMutation = gql`
   }
 `;
 
-const lexicalEntryQuery = gql`
+export const lexicalEntryQuery = gql`
   query LexicalEntryQuery($id: LingvodocID!, $entitiesMode: String!) {
     lexicalentry(id: $id) {
       id

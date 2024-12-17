@@ -3,7 +3,8 @@ import { Button, Checkbox, Form, Modal, Table, Message, Icon } from "semantic-ui
 import { isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { useMutation } from "hooks";
-import { gql, useQuery } from "@apollo/client";
+import { gql, useQuery, useApolloClient } from "@apollo/client";
+import { lexicalEntryQuery } from "components/LexicalEntryCorp";
 
 import TranslationContext from "Layout/TranslationContext";
 
@@ -36,6 +37,7 @@ const getMarkupTreeQuery = gql`
 const createMarkupGroupMutation = gql`
   mutation createMarkupGroup($groupType: String!, $markups: [[Int]], $perspectiveId: LingvodocID!) {
     create_markup_group(group_type: $groupType, markups: $markups, perspective_id: $perspectiveId) {
+      entry_ids
       triumph
     }
   }
@@ -50,6 +52,18 @@ export const deleteMarkupGroupMutation = gql`
     }
   }
 `;
+
+export const refetchLexicalEntries = (
+  (entry_ids, client) => entry_ids.forEach(
+    le_id => client.query(
+    {
+      query: lexicalEntryQuery,
+      variables: {id: le_id, entitiesMode: "all"},
+      notifyOnNetworkStatusChange: true,
+      fetchPolicy: "network-only"
+    })
+  )
+);
 
 const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
   const getTranslation = useContext(TranslationContext);
@@ -73,8 +87,13 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const [createMarkupGroup] = useMutation(createMarkupGroupMutation);
-  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation);
+  const client = useApolloClient();
+
+  const [createMarkupGroup] = useMutation(createMarkupGroupMutation,
+    {onCompleted: data => refetchLexicalEntries(data.create_markup_group.entry_ids, client)});
+
+  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation,
+    {onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)});
 
   const resetMessages = () => {
     setWarnMessage(null);
@@ -172,7 +191,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
     setFirstTextRelation(null);
     setSecondTextRelation(null);
     setTypeRelation(null);
-    setIsDirty(true);
+    //setIsDirty(true);
 
     setSuccessMessage("The group was successfully added.");
 
@@ -205,7 +224,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
 
     setSelectedRelations(null);
     setSelectedTotal(0);
-    setIsDirty(true);
+    //setIsDirty(true);
 
     setSuccessMessage("The group was successfully deleted.");
 
