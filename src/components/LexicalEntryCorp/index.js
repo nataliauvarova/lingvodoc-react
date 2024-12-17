@@ -28,6 +28,7 @@ const createEntityMutation = gql`
     $self_id: LingvodocID
     $content: String
     $file_content: Upload
+    $metadata: ObjectVal
   ) {
     create_entity(
       parent_id: $parent_id
@@ -35,6 +36,7 @@ const createEntityMutation = gql`
       self_id: $self_id
       content: $content
       file_content: $file_content
+      additional_metadata: $metadata
     ) {
       triumph
     }
@@ -73,7 +75,7 @@ const updateEntityMutation = gql`
   }
 `;
 
-const lexicalEntryQuery = gql`
+export const lexicalEntryQuery = gql`
   query LexicalEntryQuery($id: LingvodocID!, $entitiesMode: String!) {
     lexicalentry(id: $id) {
       id
@@ -179,7 +181,7 @@ const Entities = ({
   const [{ isOver }, dropRef] = useDrop({
       accept: 'entity',
       drop: (item) => {
-        create(item.content, parentEntity == null ? null : parentEntity.id);
+        create(item.content, parentEntity == null ? null : parentEntity.id, item.metadata);
       },
       collect: (monitor) => ({
         isOver: monitor.isOver()
@@ -259,11 +261,11 @@ const Entities = ({
 
   }, [edit]);
 
-  const create = useCallback((content, self_id) => {
+  const create = useCallback((content, self_id, metadata=null) => {
 
     setIsBeingCreated(true);
 
-    const variables = { parent_id: entry.id, field_id: column.id };
+    const variables = { parent_id: entry.id, field_id: column.id, metadata };
     if (content instanceof File) {
       variables.content = null;
       variables.file_content = content;

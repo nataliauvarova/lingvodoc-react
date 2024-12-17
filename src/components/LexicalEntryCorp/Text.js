@@ -1,36 +1,18 @@
 import React, { useCallback, useState, useContext, useEffect } from "react";
 import TranslationContext from "Layout/TranslationContext";
 import { useDrag } from "react-dnd";
-import { RegExpMarker, RangesMarker } from "react-mark.js";
+import { RangesMarker } from "react-mark.js";
 import TextareaAutosize from "react-textarea-autosize";
 import { Button, Checkbox, Confirm } from "semantic-ui-react";
 import { find, isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
 //import { patienceDiff } from "utils/patienceDiff";
+import { deleteMarkupGroupMutation, refetchLexicalEntries } from "components/JoinMarkupsModal";
 import { useMutation } from "hooks";
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 
 import Entities from "./index";
-
-// Entities' additional metadata should be updated as well
-// 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
-const createMarkupGroupMutation = gql`
-  mutation createMarkupGroup($groupType: String!, $markups: [[Int]]) {
-    create_markup_group(gr_type: $groupType, markups: $markups) {
-      triumph
-    }
-  }
-`;
-
-// 'markups' has the following format: [[ entity_client_id, entity_object_id, markup_start_offset ], ... ]
-const deleteMarkupGroupMutation = gql`
-  mutation deleteMarkupGroup($groupId: LingvodocID!, $markups: [[Int]], $perspectiveId: LingvodocID) {
-    delete_markup_group(group_id: $groupId, markups: $markups, perspective_id: $perspectiveId) {
-      triumph
-    }
-  }
-`;
 
 const TextEntityContent = ({
   entry,
@@ -64,79 +46,23 @@ const TextEntityContent = ({
 
   const [dropped, setDropped] = useState(null);
 
-  const markups = entity.additional_metadata?.markups || [];
   const [marking, setMarking] = useState({});
   const [browserSelection, setBrowserSelection] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+
+  const client = useApolloClient();
+  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation,
+    {onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)});
+
   const getTranslation = useContext(TranslationContext);
 
   const text = is_number ? number : entity.content;
+  const markups = entity.additional_metadata?.markups || [];
 
-  useEffect(() => {
-    if (!browserSelection) {
-      setMarking({
-        action: null,
-        result: markups,
-        groupsToDelete: null
-      });
-      return;
-    }
+  const getCurrentArea = useCallback(() => document.getElementById(id), [ id ]);
 
-    const startSelection = browserSelection.startOffset;
-    const endSelection = browserSelection.endOffset;
-    const selectedText = browserSelection.selectedText;
-
-    var selected_action = null;
-    const selected_markups = [[]];
-    const selected_groups = [];
-
-    // 'markups' variable has the following format:
-    // [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
-    for (const markup of markups) {
-      
-      const [indexes, ...groups] = markup;
-      if (!indexes || indexes.length !== 2) {
-        continue;
-      }
-      const [startMarkup, endMarkup] = indexes;
-
-      if (
-        (startMarkup <= startSelection && startSelection < endMarkup) ||
-        (startMarkup < endSelection && endSelection <= endMarkup) ||
-        (startSelection < startMarkup && endMarkup < endSelection)
-      ) {
-        if (groups.length > 0) {
-          selected_groups.push(...groups);
-          selected_action = "delete_with_group";
-        } else {
-          selected_action = "delete_markup";
-        }
-      } else {
-        selected_markups.push(markup);
-      }
-    }
-
-    if (
-      !selected_action &&
-      selectedText === selectedText.trim() &&
-      (startSelection === 0 || /\W/.test(text[startSelection - 1])) &&
-      (endSelection === text.length || /\W/.test(text[endSelection]))
-    ) {
-      selected_action = "create_markup";
-      selected_markups.push([[startSelection, endSelection]]);
-    }
-
-    console.log(selected_action + "; groups_to_delete: " + selected_groups);
-
-    setMarking({
-      action: selected_action,
-      result: selected_markups,
-      groupsToDelete: selected_groups
-    });
-  }, [browserSelection]);
-
-  const getCurrentArea = useCallback(() => document.getElementById(id), [id]);
-
+  // Pre-checking if current selection can be handled
+  // as markup and choosing base text container
   const getCurrentSelection = (checkSelectedText = true) => {
     if (!document.getSelection().rangeCount) {
       return null;
@@ -145,7 +71,7 @@ const TextEntityContent = ({
     const range = document.getSelection().getRangeAt(0);
     const selectedText = range.toString();
 
-    if (checkSelectedText && selectedText.length === 0) {
+    if (checkSelectedText && !selectedText.length) {
       return null;
     }
 
@@ -174,6 +100,7 @@ const TextEntityContent = ({
     return null;
   };
 
+  // Calculating summary selection length
   const onBrowserSelection = () => {
     const currentSelection = getCurrentSelection();
 
@@ -203,6 +130,7 @@ const TextEntityContent = ({
     });
   };
 
+  // Reset browser selection on some events
   const resetMarkupAction = event => {
     if (!!getCurrentSelection(event.type !== "mousedown")) {
       setBrowserSelection(null);
@@ -210,24 +138,93 @@ const TextEntityContent = ({
     }
   };
 
-  const markupAction = () => {
+  // Setting current markup action: create_markup/delete_markup/delete_with_group
+  // according to browser selection
+  useEffect(() => {
+
+    if (!browserSelection) {
+      setMarking({
+        action: null,
+        result: markups,
+        groupsToDelete: null
+      });
+      return;
+    }
+
+    const startSelection = browserSelection.startOffset;
+    const endSelection = browserSelection.endOffset;
+    const selectedText = browserSelection.selectedText;
+
+    var selected_action = null;
+    const selected_markups = [[]];
+    const selected_groups = [];
+
+    // 'markups' variable has the following format:
+    // [[[start_offset, end_offset], [group1_cid, group1_oid], ..., [groupN_cid, groupN_oid]]]
+    for (const markup of markups) {
+
+      const [indexes, ...groups] = markup;
+      if (!indexes || indexes.length !== 2) {
+        continue;
+      }
+      const [startMarkup, endMarkup] = indexes;
+
+      if (startMarkup <= startSelection && startSelection < endMarkup ||
+          startMarkup < endSelection && endSelection <= endMarkup ||
+          startSelection < startMarkup && endMarkup < endSelection) {
+
+        selected_action = 'delete_markup';
+
+        if (groups.length > 0) {
+          selected_groups.push(...groups);
+        }
+
+      } else {
+        selected_markups.push(markup);
+      }
+    }
+
+    if (selected_groups.length) {
+      selected_action = 'delete_with_group';
+    }
+
+    if (!selected_action && selectedText === selectedText.trim() &&
+        (startSelection === 0 || /\W/.test(text[startSelection - 1])) &&
+        (endSelection === text.length || /\W/.test(text[endSelection]))) {
+
+      selected_action = 'create_markup';
+      selected_markups.push([[startSelection, endSelection]]);
+    }
+
+    console.log(selected_action + '; groups_to_delete: ' + selected_groups);
+
+    setMarking({
+        action: selected_action,
+        result: selected_markups,
+        groupsToDelete: selected_groups
+    });
+
+  }, [browserSelection]);
+
+  // Perform markup action
+  const onMarkupAction = () => {
     const { result, action, groupsToDelete } = marking;
 
     if (action === "delete_with_group") {
       setConfirmation({
         content: getTranslation(
-          "Some of the selected markups take part in bundles. Are you sure you want to delete the markups and related groups?"
+          "Delete selected markups and related groups? Are you sure?"
         ),
         func: () => {
-          for (groupId of groupsToDelete) {
-            deleteMarkupGroup({ variables: { groupId, perspectiveId } });
-          }
+          setConfirmation(null);
+          deleteMarkupGroup({variables: {groupIds: groupsToDelete, perspectiveId: entry.parent_id}});
           update(entity, undefined, result);
         }
       });
     } else {
       update(entity, undefined, result);
     }
+    setBrowserSelection(null);
   };
 
   const onEdit = useCallback(() => {
@@ -253,7 +250,7 @@ const TextEntityContent = ({
   // useDrag - the list item is draggable
   const [{ isDragging }, dragRef, preview] = useDrag({
     type: "entity",
-    item: { id, content },
+    item: { id, content, metadata: entity.additional_metadata },
     collect: monitor => ({
       isDragging: monitor.isDragging()
     }),
@@ -380,7 +377,7 @@ const TextEntityContent = ({
                   className="lingvo-button-markup lingvo-button-markup_create"
                   content="M"
                   title={getTranslation("Create markup")}
-                  onClick={markupAction}
+                  onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />
               )}
@@ -389,7 +386,7 @@ const TextEntityContent = ({
                   className="lingvo-button-markup lingvo-button-markup_delete"
                   content="M"
                   title={getTranslation("Delete markup")}
-                  onClick={markupAction}
+                  onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />
               )}
@@ -398,7 +395,7 @@ const TextEntityContent = ({
                   className="lingvo-button-markup lingvo-button-markup_delete"
                   content="G"
                   title={getTranslation("Delete markup group")}
-                  onClick={markupAction}
+                  onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />
               )}
@@ -455,7 +452,9 @@ const TextEntityContent = ({
             </span>
           ) : (
             <span className="lingvo-entry-content">
-              <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+              <RangesMarker mark={highlights}>
+                {text}
+              </RangesMarker>
             </span>
           )}
           <Checkbox
@@ -483,14 +482,18 @@ const TextEntityContent = ({
     case "view":
       return (
         <span className="lingvo-entry-content">
-          <RegExpMarker mark={metatext}>{text}</RegExpMarker>
+          <RangesMarker mark={highlights}>
+            {text}
+          </RangesMarker>
         </span>
       );
     case "contributions":
       return entity.accepted ? (
         <span className="lingvo-entry-content">
-          <RegExpMarker mark={metatext}>{text}</RegExpMarker>
-        </span>
+          <RangesMarker mark={highlights}>
+            {text}
+          </RangesMarker>
+    </span>
       ) : (
         <Button.Group basic icon className="lingvo-buttons-group">
           <Button content={text} className="lingvo-buttons-group__text" />
