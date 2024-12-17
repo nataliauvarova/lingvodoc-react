@@ -1,7 +1,8 @@
 import React, {useCallback, useContext, useState} from "react";
 import { useDrop } from "react-dnd";
-import { Button } from "semantic-ui-react";
+import { Button, Confirm } from "semantic-ui-react";
 import { gql } from "@apollo/client";
+import { useMutation } from "hooks";
 import { graphql, withApollo } from "@apollo/client/react/hoc";
 import { flow, isEqual } from "lodash";
 import PropTypes from "prop-types";
@@ -9,6 +10,7 @@ import { compose } from "recompose";
 
 import { queryCounter } from "backend";
 import { queryLexicalEntries } from "components/CorporaView";
+import { deleteMarkupGroupMutation, refetchLexicalEntries } from "components/JoinMarkupsModal";
 import TranslationContext from "Layout/TranslationContext";
 import { compositeIdToString, compositeIdToString as id2str } from "utils/compositeId";
 
@@ -175,6 +177,11 @@ const Entities = ({
   const [is_being_created, setIsBeingCreated] = useState(false);
   const [remove_set, setRemoveSet] = useState({});
   const [update_set, setUpdateSet] = useState({});
+  const [confirmation, setConfirmation] = useState(null);
+
+  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation, {
+    onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)
+  });
 
   const getTranslation = useContext(TranslationContext);
 
@@ -431,35 +438,104 @@ const Entities = ({
     });
   }, [update_set]);
 
+  const splitEntity = ({
+    entity,
+    parentEntity,
+    beforeCaret,
+    afterCaret,
+    metadata,
+    firstMarkups,
+    secondMarkups
+  }) => {
+
+    if (entity) {
+      remove(entity);
+    }
+
+    create(
+      beforeCaret,
+      parentEntity === null ? null : parentEntity.id,
+      metadata={...metadata, 'markups': firstMarkups}
+    );
+
+    create(
+      afterCaret,
+      parentEntity === null ? null : parentEntity.id,
+      metadata={...metadata, 'markups': secondMarkups}
+    );
+  };
+
   /* Shortcut "ctrl+Enter" */
   const breakdown = useCallback((event, parentEntity, entity) => {
 
     if (event.ctrlKey && event.code === "Enter") {
-        event.preventDefault();
+      event.preventDefault();
 
-        const eventTarget = event.target;
-        const targetValue = eventTarget.value; 
+      const eventTarget = event.target;
+      const targetValue = eventTarget.value;
 
-        const selectionStart = getSelectionStart(eventTarget);
-        const selectionEnd = getSelectionEnd(eventTarget);
+      const selectionStart = getSelectionStart(eventTarget);
+      const selectionEnd = getSelectionEnd(eventTarget);
 
-        if (selectionStart === 0 && selectionEnd === 0) {
-          return;
+      if (selectionStart === 0 && selectionEnd === 0) {
+        return;
+      }
+
+      if (selectionStart === targetValue.length && selectionEnd === targetValue.length) {
+        return;
+      }
+
+      const beforeCaret = targetValue.substring(0, selectionStart).replace(/ /g, '\x20') || '\x20';
+      const afterCaret = targetValue.substring(selectionStart).replace(/ /g, '\x20') || '\x20';
+      const metadata = entity.additional_metadata || {};
+      const markups = metadata.markups || [];
+      const brokenGroups = [];
+      let brokenMarkup = false;
+      const firstMarkups = [[]];
+      const secondMarkups = [[]];
+
+      for (const markup of markups) {
+        if (!markup.length || markup[0].length != 2) {
+          continue;
         }
 
-        if (selectionStart === targetValue.length && selectionEnd === targetValue.length) {
-          return;
-        }
+        const [[startOffset, endOffset], ...groupIds] = markup;
 
-        const beforeCaret = targetValue.substring(0, selectionStart).replace(/ /g, '\x20') || '\x20';
-        const afterCaret = targetValue.substring(selectionStart).replace(/ /g, '\x20') || '\x20';
-        
-        if (entity) {
-          remove(entity);
+        if (startOffset < selectionStart && endOffset <= selectionStart) {
+          firstMarkups.push(markup);
+        } else if (startOffset >= selectionStart && endOffset > selectionStart) {
+          secondMarkups.push([[startOffset - selectionStart, endOffset - selectionStart], ...groupIds]);
+        } else {
+          brokenMarkup = true;
+          brokenGroups.push(...groupIds);
         }
-        create(beforeCaret, parentEntity === null ? null : parentEntity.id);
-        create(afterCaret, parentEntity === null ? null : parentEntity.id);
-     }
+      }
+
+      const variables = {
+        entity,
+        parentEntity,
+        beforeCaret,
+        afterCaret,
+        metadata,
+        firstMarkups,
+        secondMarkups
+      };
+
+      if (brokenMarkup) {
+        setConfirmation({
+          content: getTranslation("You are going to delete a markup and related groups? Are you sure?"),
+          func: () => {
+            setConfirmation(null);
+            splitEntity({...variables});
+            if (brokenGroups.length > 0) {
+              deleteMarkupGroup({ variables: { groupIds: brokenGroups, perspectiveId } });
+            }
+          }
+        });
+      } else {
+        splitEntity({...variables});
+      }
+    }
   }, []);
 
   const props = {
@@ -550,6 +626,14 @@ const Entities = ({
           )}
         </li>
       )}
+      <Confirm
+        open={confirmation !== null}
+        header={getTranslation("Confirmation")}
+        content={confirmation ? confirmation.content : null}
+        onConfirm={confirmation ? confirmation.func : null}
+        onCancel={() => setConfirmation(null)}
+        className="lingvo-confirm"
+      />
     </ul>
   );
 };
