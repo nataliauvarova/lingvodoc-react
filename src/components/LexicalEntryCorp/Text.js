@@ -161,7 +161,7 @@ const TextEntityContent = ({
     const selectedText = browserSelection.selectedText;
 
     var selected_action = null;
-    const selected_markups = [];
+    const selected_markups = [[]];
     const selected_groups = [];
 
     // 'markups' variable has the following format:
@@ -411,7 +411,7 @@ const TextEntityContent = ({
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_delete"
                   content="M"
-                  title={getTranslation("Delete markup")}
+                  title={getTranslation("Delete markup(s)")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />
@@ -420,7 +420,7 @@ const TextEntityContent = ({
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_delete"
                   content="G"
-                  title={getTranslation("Delete markup group")}
+                  title={getTranslation("Delete markup(s) with related groups")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}
                 />
