@@ -523,13 +523,47 @@ const TextEntityContent = ({
     case "view":
       return (
         <span className="lingvo-entry-content">
-          <RangesMarker mark={highlights}>{text}</RangesMarker>
+          {/* new!!!! */}
+          <RangesMarker
+            mark={highlights}
+            options={{
+              className: "lingvo-marker"
+            }}
+          >
+            <RangesMarker
+              mark={highlightsMarkup}
+              options={{
+                className: "lingvo-marker-markup"
+              }}
+            >
+              {text}
+            </RangesMarker>
+          </RangesMarker>
+          {/*<RangesMarker mark={highlights}>{text}</RangesMarker>*/}
+          {/* /new!!!! */}
         </span>
       );
     case "contributions":
       return entity.accepted ? (
         <span className="lingvo-entry-content">
-          <RangesMarker mark={highlights}>{text}</RangesMarker>
+          {/* new!!!! */}
+          <RangesMarker
+            mark={highlights}
+            options={{
+              className: "lingvo-marker"
+            }}
+          >
+            <RangesMarker
+              mark={highlightsMarkup}
+              options={{
+                className: "lingvo-marker-markup"
+              }}
+            >
+              {text}
+            </RangesMarker>
+          </RangesMarker>
+          {/*<RangesMarker mark={highlights}>{text}</RangesMarker>*/}
+          {/* /new!!!! */}
         </span>
       ) : (
         <Button.Group basic icon className="lingvo-buttons-group">
