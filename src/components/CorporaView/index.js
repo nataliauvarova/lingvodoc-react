@@ -559,16 +559,7 @@ class P extends React.Component {
 
     /* new!!!! */
     const onJoinMarkups = () => {
-      openNewModal(JoinMarkupsModal, {
-        perspectiveId: id,
-        onClose: () => {
-          closeNewModal(JoinMarkupsModal);
-        },
-        onCloseUpdate: () => {
-          closeNewModal(JoinMarkupsModal);
-          data.refetch();
-        }
-      });
+      openNewModal(JoinMarkupsModal, { perspectiveId: id });
     };
     /* /new!!!! */
 

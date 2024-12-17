@@ -65,23 +65,21 @@ export const refetchLexicalEntries = (
   )
 );
 
-const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
+const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const getTranslation = useContext(TranslationContext);
 
   const [firstTextRelation, setFirstTextRelation] = useState(null);
   const [secondTextRelation, setSecondTextRelation] = useState(null);
   const [typeRelation, setTypeRelation] = useState(null);
-  const [selectedRelations, setSelectedRelations] = useState(null);
-  const [isDirty, setIsDirty] = useState(false);
-
-  const joinActive = firstTextRelation && secondTextRelation && typeRelation;
-  const deleteActive = selectedRelations;
-  const onCleverClose = isDirty ? onCloseUpdate : onClose;
+  const [selectedRelations, setSelectedRelations] = useState([]);
 
   const [markupDict, setMarkupDict] = useState({});
   const [groupDict, setGroupDict] = useState({});
   const [groupTotal, setGroupTotal] = useState(0);
   const [selectedTotal, setSelectedTotal] = useState(0);
+
+  const joinActive = firstTextRelation && secondTextRelation && typeRelation;
+  const deleteActive = !!selectedTotal;
 
   const [warnMessage, setWarnMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -191,7 +189,6 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
     setFirstTextRelation(null);
     setSecondTextRelation(null);
     setTypeRelation(null);
-    //setIsDirty(true);
 
     setSuccessMessage("The group was successfully added.");
 
@@ -201,11 +198,11 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
 
     resetMessages();
 
-    const groupIds = (selectedRelations || []).map(
+    const groupIds = selectedRelations.map(
       id => id.split('_'));
 
     const markups = [];
-    (selectedRelations || []).forEach(id => {
+    selectedRelations.forEach(id => {
       const group_markups = groupDict[id].markups.map(m => m.id.split('_'));
       markups.push(...group_markups);
     });
@@ -222,9 +219,8 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
       variables: { groupIds, markups }
     }).then(refetch);
 
-    setSelectedRelations(null);
+    setSelectedRelations([]);
     setSelectedTotal(0);
-    //setIsDirty(true);
 
     setSuccessMessage("The group was successfully deleted.");
 
@@ -233,7 +229,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
   const onRelationSelect = (relation_id, checked) => {
     //console.log("onRelationSelect!!!!!!!");
 
-    const selectedIds = (selectedRelations || []);
+    const selectedIds = selectedRelations;
 
     const position = selectedIds.indexOf(relation_id);
 
@@ -247,7 +243,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
     //console.log(selectedIds);
 
     const selectedTotal = selectedIds.length;
-    setSelectedRelations(selectedTotal ? selectedIds : null);
+    setSelectedRelations(selectedIds);
     setSelectedTotal(selectedTotal);
   };
 
@@ -280,7 +276,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
   const secondText = markupDict[secondField].map(m => m.id === secondTextRelation ? m.text : "");
 
   return (
-    <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onCleverClose} size="fullscreen">
+    <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
       <Modal.Content>
         { error || loading ? (
@@ -451,7 +447,7 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
           disabled={!deleteActive}
           style={{float: "left"}}
         />
-        <Button content={getTranslation("Close")} onClick={onCleverClose} className="lingvo-button-basic-black" />
+        <Button content={getTranslation("Close")} onClick={onClose} className="lingvo-button-basic-black" />
       </Modal.Actions>
     </Modal>
   );
@@ -459,7 +455,6 @@ const JoinMarkupsModal = ({ perspectiveId, onCloseUpdate, onClose }) => {
 
 JoinMarkupsModal.propTypes = {
   perspectiveId: PropTypes.arrayOf(PropTypes.number).isRequired,
-  onCloseUpdate: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired
 };
 
