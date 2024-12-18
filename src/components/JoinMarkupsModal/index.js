@@ -175,7 +175,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSecondTextRelation(null);
     setTypeRelation(null);
 
-    setSuccessMessage("The group was successfully added.");
+    setSuccessMessage(getTranslation("The group was successfully added."));
   }, [firstTextRelation, secondTextRelation, typeRelation, groupDict]);
 
   const onDeleteRelation = useCallback(() => {
@@ -204,7 +204,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSelectedRelations([]);
     setSelectedTotal(0);
 
-    setSuccessMessage("The group was successfully deleted.");
+    setSuccessMessage(getTranslation("The group was successfully deleted."));
   }, [groupDict, selectedRelations]);
 
   const onRelationSelect = (relation_id, checked) => {
