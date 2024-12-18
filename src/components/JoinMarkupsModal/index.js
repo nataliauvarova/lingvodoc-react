@@ -53,17 +53,15 @@ export const deleteMarkupGroupMutation = gql`
   }
 `;
 
-export const refetchLexicalEntries = (
-  (entry_ids, client) => entry_ids.forEach(
-    le_id => client.query(
-    {
+export const refetchLexicalEntries = (entry_ids, client) =>
+  entry_ids.forEach(le_id =>
+    client.query({
       query: lexicalEntryQuery,
-      variables: {id: le_id, entitiesMode: "all"},
+      variables: { id: le_id, entitiesMode: "all" },
       notifyOnNetworkStatusChange: true,
       fetchPolicy: "network-only"
     })
-  )
-);
+  );
 
 const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const getTranslation = useContext(TranslationContext);
@@ -87,32 +85,27 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   const client = useApolloClient();
 
-  const [createMarkupGroup] = useMutation(createMarkupGroupMutation,
-    {onCompleted: data => refetchLexicalEntries(data.create_markup_group.entry_ids, client)});
+  const [createMarkupGroup] = useMutation(createMarkupGroupMutation, {
+    onCompleted: data => refetchLexicalEntries(data.create_markup_group.entry_ids, client)
+  });
 
-  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation,
-    {onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)});
+  const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation, {
+    onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)
+  });
 
   const resetMessages = () => {
     setWarnMessage(null);
     setErrorMessage(null);
     setSuccessMessage(null);
-  }
+  };
 
   const setRelationDict = markups => {
-
     const markupDict = {};
     const groupDict = {};
     let total = 0;
 
     for (const markup of markups) {
-
-      const {
-        field_position: f_pos,
-        field_translation: f_name,
-        markup_groups: groups,
-        ...markup_data
-      } = markup;
+      const { field_position: f_pos, field_translation: f_name, markup_groups: groups, ...markup_data } = markup;
 
       const f_id = `${f_pos}_${f_name}`;
 
@@ -122,21 +115,16 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
       markupDict[f_id].push(markup_data);
 
       for (const group of groups) {
-
-        const {
-          client_id,
-          object_id,
-          ...group_data
-        } = group;
+        const { client_id, object_id, ...group_data } = group;
 
         const g_id = `${client_id}_${object_id}`;
 
         if (!(g_id in groupDict)) {
-          groupDict[g_id] = { ...group_data, 'markups': [] };
+          groupDict[g_id] = { ...group_data, markups: [] };
         }
-        groupDict[g_id]['markups'].push(markup_data);
+        groupDict[g_id]["markups"].push(markup_data);
 
-        if (groupDict[g_id]['markups'].length === 2) {
+        if (groupDict[g_id]["markups"].length === 2) {
           total++;
         }
       }
@@ -152,7 +140,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setGroupTotal(total);
   };
 
-  const {data, error, loading, refetch} = useQuery(getMarkupTreeQuery, {
+  const { data, error, loading, refetch } = useQuery(getMarkupTreeQuery, {
     variables: { perspectiveId },
     fetchPolicy: "network-only",
     onCompleted: data => setRelationDict(data.markups)
@@ -168,11 +156,8 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     }
 
     for (const group of Object.values(groupDict)) {
-      const ids = group['markups'].map(markup => markup.id);
-      if (ids.includes(firstTextRelation) &&
-          ids.includes(secondTextRelation) &&
-          group.type === typeRelation) {
-
+      const ids = group["markups"].map(markup => markup.id);
+      if (ids.includes(firstTextRelation) && ids.includes(secondTextRelation) && group.type === typeRelation) {
         setWarnMessage("Such group already exists.");
         return;
       }
@@ -181,7 +166,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     createMarkupGroup({
       variables: {
         groupType: typeRelation,
-        markups: [firstTextRelation.split('_'), secondTextRelation.split('_')],
+        markups: [firstTextRelation.split("_"), secondTextRelation.split("_")],
         perspectiveId
       }
     }).then(refetch);
@@ -191,19 +176,16 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setTypeRelation(null);
 
     setSuccessMessage("The group was successfully added.");
-
   }, [firstTextRelation, secondTextRelation, typeRelation, groupDict]);
 
   const onDeleteRelation = useCallback(() => {
-
     resetMessages();
 
-    const groupIds = selectedRelations.map(
-      id => id.split('_'));
+    const groupIds = selectedRelations.map(id => id.split("_"));
 
     const markups = [];
     selectedRelations.forEach(id => {
-      const group_markups = groupDict[id].markups.map(m => m.id.split('_'));
+      const group_markups = groupDict[id].markups.map(m => m.id.split("_"));
       markups.push(...group_markups);
     });
 
@@ -223,7 +205,6 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSelectedTotal(0);
 
     setSuccessMessage("The group was successfully deleted.");
-
   }, [groupDict, selectedRelations]);
 
   const onRelationSelect = (relation_id, checked) => {
@@ -272,14 +253,14 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const firstField = Object.keys(markupDict)[0];
   const secondField = Object.keys(markupDict)[1];
 
-  const firstText = markupDict[firstField].map(m => m.id === firstTextRelation ? m.text : "");
-  const secondText = markupDict[secondField].map(m => m.id === secondTextRelation ? m.text : "");
+  const firstText = markupDict[firstField].map(m => (m.id === firstTextRelation ? m.text : ""));
+  const secondText = markupDict[secondField].map(m => (m.id === secondTextRelation ? m.text : ""));
 
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
       <Modal.Header>{getTranslation("Join markups")}</Modal.Header>
       <Modal.Content>
-        { error || loading ? (
+        {error || loading ? (
           <span>
             {`${getTranslation("Loading markups and groups data")}...`} <Icon name="spinner" loading />
           </span>
@@ -293,7 +274,12 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                     <Table.Header>
                       <Table.Row>
                         <Table.HeaderCell>
-                          {firstField.split('_')[1]}: {firstText}
+                          {/* new!!!! */}
+                          <div className="selected-markup">
+                            {firstField.split("_")[1]}: <span className="selected-markup__text">{firstText}</span>
+                          </div>
+                          {/*{firstField.split("_")[1]}: {firstText}*/}
+                          {/* /new!!!! */}
                         </Table.HeaderCell>
                       </Table.Row>
                     </Table.Header>
@@ -302,7 +288,10 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                         return (
                           <Table.Row key={markup.id}>
                             <Table.Cell
-                              onClick={e => { setFirstTextRelation(markup.id); resetMessages(); }}
+                              onClick={e => {
+                                setFirstTextRelation(markup.id);
+                                resetMessages();
+                              }}
                               className={(markup.id === firstTextRelation && "selected-text-relation") || ""}
                             >
                               {markup.text}
@@ -319,7 +308,12 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                     <Table.Header>
                       <Table.Row>
                         <Table.HeaderCell>
-                          {secondField.split('_')[1]}: {secondText}
+                          {/* new!!!! */}
+                          <div className="selected-markup">
+                            {secondField.split("_")[1]}: <span className="selected-markup__text">{secondText}</span>
+                          </div>
+                          {/*{secondField.split("_")[1]}: {secondText}*/}
+                          {/* /new!!!! */}
                         </Table.HeaderCell>
                       </Table.Row>
                     </Table.Header>
@@ -328,7 +322,10 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                         return (
                           <Table.Row key={markup.id}>
                             <Table.Cell
-                              onClick={e => { setSecondTextRelation(markup.id); resetMessages(); }}
+                              onClick={e => {
+                                setSecondTextRelation(markup.id);
+                                resetMessages();
+                              }}
                               className={(markup.id === secondTextRelation && "selected-text-relation") || ""}
                             >
                               {markup.text}
@@ -359,7 +356,10 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                       key="Translit"
                       value="Translit"
                       checked={typeRelation === "Translit"}
-                      onChange={(e, { value }) => { setTypeRelation(value); resetMessages(); }}
+                      onChange={(e, { value }) => {
+                        setTypeRelation(value);
+                        resetMessages();
+                      }}
                       className="lingvo-radio"
                     />
 
@@ -369,7 +369,10 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                       key="LiteralTranslation"
                       value="LiteralTranslation"
                       checked={typeRelation === "LiteralTranslation"}
-                      onChange={(e, { value }) => { setTypeRelation(value); resetMessages(); }}
+                      onChange={(e, { value }) => {
+                        setTypeRelation(value);
+                        resetMessages();
+                      }}
                       className="lingvo-radio"
                     />
                   </Form>
@@ -385,20 +388,16 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
               {/* /Table Markups */}
             </div>
 
-            { warnMessage && (
+            {warnMessage && (
               <Message warning>
                 <Message.Header>{getTranslation("Warning")}</Message.Header>
-                <p>
-                  {getTranslation(warnMessage)}
-                </p>
+                <p>{getTranslation(warnMessage)}</p>
               </Message>
             )}
-            { successMessage && (
+            {successMessage && (
               <Message positive>
                 <Message.Header>{getTranslation("Success")}</Message.Header>
-                <p>
-                  {getTranslation(successMessage)}
-                </p>
+                <p>{getTranslation(successMessage)}</p>
               </Message>
             )}
 
@@ -408,28 +407,31 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                 <Table.Header>
                   <Table.Row>
                     <Table.HeaderCell className="th-checkbox">&nbsp;</Table.HeaderCell>
-                    <Table.HeaderCell> {firstField.split('_')[1]} </Table.HeaderCell>
-                    <Table.HeaderCell> {secondField.split('_')[1]} </Table.HeaderCell>
+                    <Table.HeaderCell> {firstField.split("_")[1]} </Table.HeaderCell>
+                    <Table.HeaderCell> {secondField.split("_")[1]} </Table.HeaderCell>
                     <Table.HeaderCell> {getTranslation("Type")} </Table.HeaderCell>
                     <Table.HeaderCell> {getTranslation("Author")} </Table.HeaderCell>
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
-                  {Object.keys(groupDict).map(group_id => groupDict[group_id].markups.length > 1 && (
-                    <Table.Row key={group_id}>
-                      <Table.Cell>
-                        <Checkbox
-                          className="lingvo-checkbox"
-                          //checked={selectedRelations.find(e => isEqual(e, relation.id))}
-                          onChange={(e, { checked }) => onRelationSelect(group_id, checked)}
-                        />
-                      </Table.Cell>
-                      <Table.Cell> {groupDict[group_id].markups[0].text} </Table.Cell>
-                      <Table.Cell> {groupDict[group_id].markups[1].text} </Table.Cell>
-                      <Table.Cell> {groupDict[group_id].type} </Table.Cell>
-                      <Table.Cell> {groupDict[group_id].author_name} </Table.Cell>
-                    </Table.Row>
-                  ))}
+                  {Object.keys(groupDict).map(
+                    group_id =>
+                      groupDict[group_id].markups.length > 1 && (
+                        <Table.Row key={group_id}>
+                          <Table.Cell>
+                            <Checkbox
+                              className="lingvo-checkbox"
+                              //checked={selectedRelations.find(e => isEqual(e, relation.id))}
+                              onChange={(e, { checked }) => onRelationSelect(group_id, checked)}
+                            />
+                          </Table.Cell>
+                          <Table.Cell> {groupDict[group_id].markups[0].text} </Table.Cell>
+                          <Table.Cell> {groupDict[group_id].markups[1].text} </Table.Cell>
+                          <Table.Cell> {groupDict[group_id].type} </Table.Cell>
+                          <Table.Cell> {groupDict[group_id].author_name} </Table.Cell>
+                        </Table.Row>
+                      )
+                  )}
                 </Table.Body>
               </Table>
               {/* /Table Relations */}
@@ -439,13 +441,11 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
       </Modal.Content>
       <Modal.Actions>
         <Button
-          content={
-            getTranslation("Delete groups") +
-            " (" + selectedTotal + "/" + groupTotal + ")"}
+          content={getTranslation("Delete groups") + " (" + selectedTotal + "/" + groupTotal + ")"}
           onClick={onDeleteRelation}
           className="lingvo-button-redder"
           disabled={!deleteActive}
-          style={{float: "left"}}
+          style={{ float: "left" }}
         />
         <Button content={getTranslation("Close")} onClick={onClose} className="lingvo-button-basic-black" />
       </Modal.Actions>
