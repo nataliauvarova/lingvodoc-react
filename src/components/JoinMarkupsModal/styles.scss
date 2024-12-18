@@ -45,6 +45,19 @@
       position: sticky;
       top: 0;
       z-index: 1;
+
+      & .selected-markup {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        /*-webkit-line-clamp: 2;*/
+        overflow: hidden;
+        overflow-wrap: break-word;
+      }
+
+      & .selected-markup__text {
+        color: #4e46b4;
+      }
     }
 
     & .ui.table tr td {
