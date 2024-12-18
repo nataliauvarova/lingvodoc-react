@@ -36,7 +36,7 @@
  *
  */
 
-function patienceDiff( aLines, bLines, diffPlusFlag ) {
+export function patienceDiff( aLines, bLines, diffPlusFlag ) {
 
 	//
 	// findUnique finds all unique values in arr[lo..hi], inclusive.  This
