@@ -87,14 +87,9 @@ const TextEntityContent = ({
     }
 
     // if not "edit" mode. We can not simply check for mode value because of useEffect and EventListener specific
-    /* new!!!!! */
-    /*if (startContainer.parentElement.parentElement?.classList[0] !== "lingvo-input-buttons-group__name") {
-      return null;
-    }*/
     if (startContainer.parentElement.parentElement.parentElement?.classList[0] !== "lingvo-input-buttons-group__name") {
       return null;
     }
-    /* /new!!!!! */
 
     if (getCurrentArea().contains(startContainer)) {
       return {
@@ -323,7 +318,7 @@ const TextEntityContent = ({
   const metatext = new RegExp([pg_ln, pg, ln, snt, missed].map(regex => regex.source).join("|"), "g");
 
   const highlights = [];
-  const highlightsMarkup = []; // new!!!!!
+  const highlightsMarkup = [];
 
   for (const [indexes, ..._] of markups) {
     if (!indexes || indexes.length !== 2) {
@@ -331,16 +326,10 @@ const TextEntityContent = ({
     }
     const [startMarkup, endMarkup] = indexes;
 
-    /* new!!!! */
     highlightsMarkup.push({
       start: startMarkup,
       length: endMarkup - startMarkup
     });
-    /*highlights.push({
-      start: startMarkup,
-      length: endMarkup - startMarkup
-    });*/
-    /* /new!!!! */
   }
 
   let segment;
@@ -364,7 +353,6 @@ const TextEntityContent = ({
         >
           {!(is_being_updated || edit) && (
             <span className="lingvo-input-buttons-group__name">
-              {/* new!!!! */}
               <RangesMarker
                 mark={highlights}
                 options={{
@@ -380,8 +368,6 @@ const TextEntityContent = ({
                   {text}
                 </RangesMarker>
               </RangesMarker>
-              {/*<RangesMarker mark={highlights}>{text}</RangesMarker>*/}
-              {/* /new!!!! */}
             </span>
           )}
           {(is_being_updated || edit) && (
@@ -478,7 +464,6 @@ const TextEntityContent = ({
             </span>
           ) : (
             <span className="lingvo-entry-content">
-              {/* new!!!! */}
               <RangesMarker
                 mark={highlights}
                 options={{
@@ -494,8 +479,6 @@ const TextEntityContent = ({
                   {text}
                 </RangesMarker>
               </RangesMarker>
-              {/*<RangesMarker mark={highlights}>{text}</RangesMarker>*/}
-              {/* /new!!!! */}
             </span>
           )}
           <Checkbox
@@ -523,7 +506,6 @@ const TextEntityContent = ({
     case "view":
       return (
         <span className="lingvo-entry-content">
-          {/* new!!!! */}
           <RangesMarker
             mark={highlights}
             options={{
@@ -539,14 +521,11 @@ const TextEntityContent = ({
               {text}
             </RangesMarker>
           </RangesMarker>
-          {/*<RangesMarker mark={highlights}>{text}</RangesMarker>*/}
-          {/* /new!!!! */}
         </span>
       );
     case "contributions":
       return entity.accepted ? (
         <span className="lingvo-entry-content">
-          {/* new!!!! */}
           <RangesMarker
             mark={highlights}
             options={{
@@ -562,8 +541,6 @@ const TextEntityContent = ({
               {text}
             </RangesMarker>
           </RangesMarker>
-          {/*<RangesMarker mark={highlights}>{text}</RangesMarker>*/}
-          {/* /new!!!! */}
         </span>
       ) : (
         <Button.Group basic icon className="lingvo-buttons-group">
