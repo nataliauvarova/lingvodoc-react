@@ -156,7 +156,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     for (const group of Object.values(groupDict)) {
       const ids = group["markups"].map(markup => markup.id);
       if (ids.includes(firstTextRelation) && ids.includes(secondTextRelation) && group.type === typeRelation) {
-        setWarnMessage("Such group already exists.");
+        setWarnMessage(getTranslation("Such group already exists."));
         return;
       }
     }
@@ -215,21 +215,6 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSelectedRelations(selectedIds);
     setSelectedTotal(selectedTotal);
   };
-
-  /*console.log("perspectiveId====");
-  console.log(perspectiveId);
-
-  console.log("onClose====");
-  console.log(onClose);
-
-  console.log("relations===");
-  console.log(relations);
-
-  console.log("joinActive===");
-  console.log(joinActive);
-
-  console.log("selectedRelations=====");
-  console.log(selectedRelations);*/
 
   if (Object.keys(markupDict) < 2) {
     return;
