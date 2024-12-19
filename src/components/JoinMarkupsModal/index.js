@@ -147,8 +147,6 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   });
 
   const onAddRelation = useCallback(() => {
-    //console.log("onAddRelation!!!!!!!");
-
     resetMessages();
 
     if (!firstTextRelation || !secondTextRelation || !typeRelation) {
@@ -189,14 +187,6 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
       markups.push(...group_markups);
     });
 
-    /*
-    console.log("onDeleteRelation!!!!!!!");
-    console.log("Их будем удалять: selectedRelations====");
-    console.log(groupIds);
-    console.log("Их будем удалять: selectedMarkups====");
-    console.log(markups);
-    */
-
     deleteMarkupGroup({
       variables: { groupIds, markups }
     }).then(refetch);
@@ -208,8 +198,6 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   }, [groupDict, selectedRelations]);
 
   const onRelationSelect = (relation_id, checked) => {
-    //console.log("onRelationSelect!!!!!!!");
-
     const selectedIds = selectedRelations;
 
     const position = selectedIds.indexOf(relation_id);
@@ -230,9 +218,6 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   /*console.log("perspectiveId====");
   console.log(perspectiveId);
-
-  console.log("mode====");
-  console.log(mode);
 
   console.log("onClose====");
   console.log(onClose);
@@ -274,12 +259,9 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                     <Table.Header>
                       <Table.Row>
                         <Table.HeaderCell>
-                          {/* new!!!! */}
                           <div className="selected-markup">
                             {firstField.split("_")[1]}: <span className="selected-markup__text">{firstText}</span>
                           </div>
-                          {/*{firstField.split("_")[1]}: {firstText}*/}
-                          {/* /new!!!! */}
                         </Table.HeaderCell>
                       </Table.Row>
                     </Table.Header>
@@ -308,12 +290,9 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                     <Table.Header>
                       <Table.Row>
                         <Table.HeaderCell>
-                          {/* new!!!! */}
                           <div className="selected-markup">
                             {secondField.split("_")[1]}: <span className="selected-markup__text">{secondText}</span>
                           </div>
-                          {/*{secondField.split("_")[1]}: {secondText}*/}
-                          {/* /new!!!! */}
                         </Table.HeaderCell>
                       </Table.Row>
                     </Table.Header>
@@ -389,13 +368,13 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
             </div>
 
             {warnMessage && (
-              <Message warning>
+              <Message warning style={{ minHeight: "auto", marginTop: "0" }}>
                 <Message.Header>{getTranslation("Warning")}</Message.Header>
                 <p>{getTranslation(warnMessage)}</p>
               </Message>
             )}
             {successMessage && (
-              <Message positive>
+              <Message positive style={{ minHeight: "auto", marginTop: "0" }}>
                 <Message.Header>{getTranslation("Success")}</Message.Header>
                 <p>{getTranslation(successMessage)}</p>
               </Message>
