@@ -949,6 +949,7 @@ export const stringsToTranslate = [
   "Updating valency data...",
   "Upload",
   "Upload successful",
+  "Uploading",
   "uploading audio files of any size, (audio)corpora in ELAN format, texts in Word .odt format",
   "URL with results of saving data should appear soon after clicking save button in the tasks",
   "Use linked data",
