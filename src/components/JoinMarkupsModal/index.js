@@ -156,7 +156,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     for (const group of Object.values(groupDict)) {
       const ids = group["markups"].map(markup => markup.id);
       if (ids.includes(firstTextRelation) && ids.includes(secondTextRelation) && group.type === typeRelation) {
-        setWarnMessage(getTranslation("Such group already exists."));
+        setWarnMessage("Such group already exists.");
         return;
       }
     }
@@ -173,7 +173,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSecondTextRelation(null);
     setTypeRelation(null);
 
-    setSuccessMessage(getTranslation("The group was successfully added."));
+    setSuccessMessage("The group was successfully added.");
   }, [firstTextRelation, secondTextRelation, typeRelation, groupDict]);
 
   const onDeleteRelation = useCallback(() => {
@@ -194,7 +194,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSelectedRelations([]);
     setSelectedTotal(0);
 
-    setSuccessMessage(getTranslation("The group was successfully deleted."));
+    setSuccessMessage("The group was successfully deleted.");
   }, [groupDict, selectedRelations]);
 
   const onRelationSelect = (relation_id, checked) => {
