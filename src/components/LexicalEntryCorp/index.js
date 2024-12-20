@@ -12,6 +12,7 @@ import { queryCounter } from "backend";
 import { queryLexicalEntries } from "components/CorporaView";
 import { deleteMarkupGroupMutation, refetchLexicalEntries } from "components/JoinMarkupsModal";
 import TranslationContext from "Layout/TranslationContext";
+import { patienceDiff } from "utils/patienceDiff";
 import { compositeIdToString, compositeIdToString as id2str } from "utils/compositeId";
 
 import GroupingTag from "./GroupingTag";
@@ -401,13 +402,61 @@ const Entities = ({
     });
   }, [remove_set]);
 
-  const update = useCallback((entity, content = entity.content, markups = null) => {
+  const update = useCallback((entity, content = entity.content, ready_markups = null) => {
 
     const entity_id_str = id2str(entity.id);
 
     const update_set2 = update_set;
     update_set2[entity_id_str] = null;
     setUpdateSet(update_set2);
+
+    const markups = ready_markups || [[]];
+
+    if (!ready_markups &&
+        content !== entity.content &&
+        entity.additional_metadata?.markups &&
+        entity.additional_metadata.markups.length > 1) {
+
+      const diff = patienceDiff(entity.content, content).lines;
+
+      for (const markup of entity.additional_metadata.markups) {
+        if (!markup.length || markup[0].length !== 2) {
+          continue;
+        }
+
+        let [[startOffset, endOffset], ...groupIds] = markup;
+        const startIndex = diff.map(ch => ch.aIndex).indexOf(startOffset);
+        const endIndex = diff.map(ch => ch.aIndex).indexOf(endOffset);
+        const markupDiff = diff.slice(0, endIndex);
+
+        for (const [i, {aIndex, bIndex}] of markupDiff.entries()) {
+          if (aIndex === -1) {
+            if (i < startIndex) {
+              startOffset++;
+            }
+            endOffset++;
+          }
+          if (bIndex === -1) {
+            if (i < startIndex) {
+              startOffset--;
+            }
+            endOffset--;
+          }
+        }
+
+        if (startOffset < endOffset) {
+          console.log("=== Markup was moved");
+          markups.push([[startOffset, endOffset], ...groupIds]);
+
+        } else if (groupIds.length > 0) {
+          console.log("=== Markup with groups were deleted");
+          deleteMarkupGroup({ variables: { groupIds, perspectiveId } });
+
+        } else {
+          console.log("=== Markup was deleted");
+        }
+      }
+    }
 
     updateEntity({
       variables: { id: entity.id, content, markups },
@@ -495,7 +544,7 @@ const Entities = ({
       const secondMarkups = [[]];
 
       for (const markup of markups) {
-        if (!markup.length || markup[0].length != 2) {
+        if (!markup.length || markup[0].length !== 2) {
           continue;
         }
 
@@ -598,7 +647,7 @@ const Entities = ({
           is_being_removed={remove_set.hasOwnProperty(id2str(entity.id))}
           is_being_updated={update_set.hasOwnProperty(id2str(entity.id))}
           number={number} 
-          id={entity.id} 
+          id={entity.id}
         />
       ))}
       {mode === "edit" && !is_order_column && (

@@ -7,7 +7,6 @@ import { Button, Checkbox, Confirm } from "semantic-ui-react";
 import { find, isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { onlyUpdateForKeys } from "recompose";
-//import { patienceDiff } from "utils/patienceDiff";
 import { deleteMarkupGroupMutation, refetchLexicalEntries } from "components/JoinMarkupsModal";
 import { useMutation } from "hooks";
 import { gql, useApolloClient } from "@apollo/client";
@@ -240,6 +239,10 @@ const TextEntityContent = ({
 
       if (event.code === "Enter" && !event.ctrlKey) {
         onEdit();
+      }
+
+      if (event.keyCode === 27) {
+        setEdit(false);
       }
     },
     [edit, content]
