@@ -368,8 +368,8 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                 <Table.Header>
                   <Table.Row>
                     <Table.HeaderCell className="th-checkbox">&nbsp;</Table.HeaderCell>
-                    <Table.HeaderCell> {firstField.split("_")[1]} </Table.HeaderCell>
-                    <Table.HeaderCell> {secondField.split("_")[1]} </Table.HeaderCell>
+                    <Table.HeaderCell className="th-markup"> {firstField.split("_")[1]} </Table.HeaderCell>
+                    <Table.HeaderCell className="th-markup"> {secondField.split("_")[1]} </Table.HeaderCell>
                     <Table.HeaderCell> {getTranslation("Type")} </Table.HeaderCell>
                     <Table.HeaderCell> {getTranslation("Author")} </Table.HeaderCell>
                   </Table.Row>
