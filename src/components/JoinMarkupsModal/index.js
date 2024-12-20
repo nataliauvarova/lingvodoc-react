@@ -208,9 +208,6 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
       selectedIds.splice(position, 1);
     }
 
-    //console.log("onRelationSelect: selectedIds======");
-    //console.log(selectedIds);
-
     const selectedTotal = selectedIds.length;
     setSelectedRelations(selectedIds);
     setSelectedTotal(selectedTotal);

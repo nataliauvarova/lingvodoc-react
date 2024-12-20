@@ -257,6 +257,8 @@ export const stringsToTranslate = [
   "Delete markup",
   "Delete markup file",
   "Delete markup group",
+  "Delete markup(s)",
+  "Delete markup(s) with related groups",
   "Delete organization",
   "Delete sound file",
   "Deleting",
