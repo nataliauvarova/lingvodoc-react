@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { Button, Checkbox, Form, Modal, Table, Message, Icon } from "semantic-ui-react";
+import { Button, Checkbox, Form, Modal, Table, Message, Icon, Confirm } from "semantic-ui-react";
 import { isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { useMutation } from "hooks";
@@ -53,6 +53,17 @@ export const deleteMarkupGroupMutation = gql`
   }
 `;
 
+const saveMarkupGroupsMutation = gql`
+  mutation saveMarkupGroups($baseName: String!, $fieldList: [ObjectVal]!, $groupList: [ObjectVal]!) {
+    save_markup_groups(base_name: $baseName, field_list: $fieldList, group_list: $groupList) {
+      xlsx_url
+      message
+      triumph
+    }
+  }
+`;
+
+
 export const refetchLexicalEntries = (entry_ids, client) =>
   entry_ids.forEach(le_id =>
     client.query({
@@ -82,6 +93,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const [warnMessage, setWarnMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
 
   const client = useApolloClient();
 
@@ -91,6 +103,18 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation, {
     onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)
+  });
+
+  const [saveMarkupGroups] = useMutation(saveMarkupGroupsMutation, {
+    onCompleted: ({save_markup_groups: result}) => {
+      if (result.triumph) {
+        setSuccessMessage(
+          `${getTranslation("Follow")} <a href=${result.xlsx_url}>${getTranslation("result url")}</a>`
+        );
+      } else {
+        setWarnMessage(getTranslation(result.message));
+      }
+    }
   });
 
   const resetMessages = () => {
@@ -122,9 +146,9 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
         if (!(g_id in groupDict)) {
           groupDict[g_id] = { ...group_data, markups: [] };
         }
-        groupDict[g_id]["markups"].push(markup_data);
+        groupDict[g_id].markups.push(markup_data);
 
-        if (groupDict[g_id]["markups"].length === 2) {
+        if (groupDict[g_id].markups.length === 2) {
           total++;
         }
       }
@@ -154,7 +178,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     }
 
     for (const group of Object.values(groupDict)) {
-      const ids = group["markups"].map(markup => markup.id);
+      const ids = group.markups.map(markup => markup.id);
       if (ids.includes(firstTextRelation) && ids.includes(secondTextRelation) && group.type === typeRelation) {
         window.logger.warn(getTranslation("Such group already exists."));
         return;
@@ -212,6 +236,23 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSelectedRelations(selectedIds);
     setSelectedTotal(selectedTotal);
   };
+
+  const onSaveXlsx = useCallback(() => {
+    const groupList = [];
+    const fieldList = Object.keys(markupDict).map(id => id.split("_")[1]);
+
+    //console.log("=== onSaveXlsx ===");
+
+    for (const group of Object.values(groupDict)) {
+      groupList.push({
+        text: group.markups.map(m => m.text),
+        type: group.type,
+        author: group.author_name,
+      });
+    }
+
+    saveMarkupGroups({variables: {baseName: "Name_of_dictionary", fieldList, groupList}});
+  }, [markupDict, groupDict]);
 
   if (Object.keys(markupDict) < 2) {
     return;
@@ -352,13 +393,13 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
             {warnMessage && (
               <Message warning style={{ minHeight: "auto", marginTop: "0" }}>
                 <Message.Header>{getTranslation("Warning")}</Message.Header>
-                <p>{getTranslation(warnMessage)}</p>
+                <p>{warnMessage}</p>
               </Message>
             )}
             {successMessage && (
               <Message positive style={{ minHeight: "auto", marginTop: "0" }}>
                 <Message.Header>{getTranslation("Success")}</Message.Header>
-                <p>{getTranslation(successMessage)}</p>
+                <p dangerouslySetInnerHTML={{ __html: successMessage }}></p>
               </Message>
             )}
 
@@ -408,8 +449,23 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
           disabled={!deleteActive}
           style={{ float: "left" }}
         />
+        <Button
+          content={getTranslation("Save to xlsx")}
+          onClick={onSaveXlsx}
+          className="lingvo-button-greenest"
+          disabled={!groupTotal}
+          style={{ float: "left" }}
+        />
         <Button content={getTranslation("Close")} onClick={onClose} className="lingvo-button-basic-black" />
       </Modal.Actions>
+      <Confirm
+        open={confirmation !== null}
+        header={getTranslation("Confirmation")}
+        content={confirmation ? confirmation.content : null}
+        onConfirm={confirmation ? confirmation.func : null}
+        onCancel={() => setConfirmation(null)}
+        className="lingvo-confirm"
+      />
     </Modal>
   );
 };
