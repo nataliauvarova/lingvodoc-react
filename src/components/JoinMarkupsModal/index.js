@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { Button, Checkbox, Form, Modal, Table, Message, Icon, Confirm } from "semantic-ui-react";
+import { Button, Checkbox, Select, Modal, Table, Message, Icon, Confirm } from "semantic-ui-react";
 import { isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { useMutation } from "hooks";
@@ -246,7 +246,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     for (const group of Object.values(groupDict)) {
       groupList.push({
         text: group.markups.map(m => m.text),
-        type: group.type,
+        type: getTranslation(group.type),
         author: group.author_name,
       });
     }
@@ -263,6 +263,24 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   const firstText = markupDict[firstField].map(m => (m.id === firstTextRelation ? m.text : ""));
   const secondText = markupDict[secondField].map(m => (m.id === secondTextRelation ? m.text : ""));
+
+  const group_type_list = [
+    "Transliteration",
+    "Transcription",
+    "Сalque",
+    "Transposition",
+    "Descriptive translation",
+    "Similatory translation",
+    "Neologism",
+    "Semi-calque",
+    "Lexico-grammatical replacement",
+    "Antonymous",
+    "Compensation"
+  ].sort().map((t, k) => ({
+    key: k,
+    value: t,
+    text: getTranslation(t)
+  }));
 
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
@@ -339,46 +357,18 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                   </Table>
                 </div>
                 <div className="block-add-relation__actions">
-                  {/*<Form>
-                  {statistics.map(stat => (
-                    <Form.Radio
-                      key={stat.user_id}
-                      label={stat.name}
-                      value={stat.user_id}
-                      checked={user_id === stat.user_id}
-                      onChange={this.handleUserSelected}
-                      className="lingvo-radio"
-                    />
-                  ))}
-                </Form>*/}
-                  <Form>
-                    <Form.Radio
-                      label={getTranslation("Translit")}
-                      name="radioGroup"
-                      key="Translit"
-                      value="Translit"
-                      checked={typeRelation === "Translit"}
-                      onChange={(e, { value }) => {
-                        setTypeRelation(value);
-                        resetMessages();
-                      }}
-                      className="lingvo-radio"
-                    />
-
-                    <Form.Radio
-                      label={getTranslation("Literal translation")}
-                      name="radioGroup"
-                      key="LiteralTranslation"
-                      value="LiteralTranslation"
-                      checked={typeRelation === "LiteralTranslation"}
-                      onChange={(e, { value }) => {
-                        setTypeRelation(value);
-                        resetMessages();
-                      }}
-                      className="lingvo-radio"
-                    />
-                  </Form>
-
+                  <Select
+                    fluid
+                    placeholder={getTranslation("Please select type...")}
+                    value={typeRelation}
+                    search
+                    options={group_type_list}
+                    onChange={(e, { value }) => {
+                      setTypeRelation(value);
+                      resetMessages();
+                    }}
+                  />
+                  <p/>
                   <Button
                     content={getTranslation("Join markups")}
                     onClick={onAddRelation}
@@ -429,7 +419,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                           </Table.Cell>
                           <Table.Cell> {groupDict[group_id].markups[0].text} </Table.Cell>
                           <Table.Cell> {groupDict[group_id].markups[1].text} </Table.Cell>
-                          <Table.Cell> {groupDict[group_id].type} </Table.Cell>
+                          <Table.Cell> {getTranslation(groupDict[group_id].type)} </Table.Cell>
                           <Table.Cell> {groupDict[group_id].author_name} </Table.Cell>
                         </Table.Row>
                       )
