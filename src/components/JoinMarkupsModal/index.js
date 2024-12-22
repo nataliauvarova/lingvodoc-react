@@ -267,7 +267,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const group_type_list = [
     "Transliteration",
     "Transcription",
-    "Сalque",
+    "Calque",
     "Transposition",
     "Descriptive translation",
     "Similatory translation",
