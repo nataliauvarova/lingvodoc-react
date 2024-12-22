@@ -54,8 +54,8 @@ export const deleteMarkupGroupMutation = gql`
 `;
 
 const saveMarkupGroupsMutation = gql`
-  mutation saveMarkupGroups($baseName: String!, $fieldList: [ObjectVal]!, $groupList: [ObjectVal]!) {
-    save_markup_groups(base_name: $baseName, field_list: $fieldList, group_list: $groupList) {
+  mutation saveMarkupGroups($perspectiveId: LingvodocID!, $fieldList: [ObjectVal]!, $groupList: [ObjectVal]!) {
+    save_markup_groups(perspective_id: $perspectiveId, field_list: $fieldList, group_list: $groupList) {
       xlsx_url
       message
       triumph
@@ -109,7 +109,8 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     onCompleted: ({save_markup_groups: result}) => {
       if (result.triumph) {
         setSuccessMessage(
-          `${getTranslation("Follow")} <a href=${result.xlsx_url}>${getTranslation("result url")}</a>`
+          `${getTranslation("Markup groups were saved into xlsx file.")}
+          ${getTranslation("Follow")} <a href=${result.xlsx_url}>${getTranslation("result url")}</a>`
         );
       } else {
         setWarnMessage(getTranslation(result.message));
@@ -239,9 +240,8 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   const onSaveXlsx = useCallback(() => {
     const groupList = [];
-    const fieldList = Object.keys(markupDict).map(id => id.split("_")[1]);
-
-    //console.log("=== onSaveXlsx ===");
+    const fieldList =
+      Object.keys(markupDict).map(id => id.split("_")[1]).concat([getTranslation('Type'), getTranslation('Author')]);
 
     for (const group of Object.values(groupDict)) {
       groupList.push({
@@ -251,7 +251,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
       });
     }
 
-    saveMarkupGroups({variables: {baseName: "Name_of_dictionary", fieldList, groupList}});
+    saveMarkupGroups({variables: {perspectiveId, fieldList, groupList}});
   }, [markupDict, groupDict]);
 
   if (Object.keys(markupDict) < 2) {
