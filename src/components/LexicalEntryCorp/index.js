@@ -181,7 +181,10 @@ const Entities = ({
   const [confirmation, setConfirmation] = useState(null);
 
   const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation, {
-    onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)
+    onCompleted: data => {
+      refetchLexicalEntries(data.delete_markup_group.entry_ids, client);
+      window.logger.warn(getTranslation("Markup(s) with related groups were removed"));
+    }
   });
 
   const getTranslation = useContext(TranslationContext);
@@ -373,6 +376,24 @@ const Entities = ({
     remove_set2[entity_id_str] = null;
     setRemoveSet(remove_set2);
 
+    const groupsToDelete = [];
+
+    for (const markup of (entity.additional_metadata?.markups ?? [])) {
+      if (!markup.length) {
+        continue;
+      }
+
+      const [_, ...groupIds] = markup;
+
+      if (groupIds.length > 0) {
+        groupsToDelete.push(...groupIds);
+      }
+    }
+
+    if (groupsToDelete.length > 0) {
+      deleteMarkupGroup({ variables: { groupIds: groupsToDelete, perspectiveId }});
+    }
+
     removeEntity({
       variables: { id: entity.id },
       refetchQueries: [
@@ -410,14 +431,14 @@ const Entities = ({
     update_set2[entity_id_str] = null;
     setUpdateSet(update_set2);
 
-    const markups = ready_markups || [[]];
+    const current_markups = entity.additional_metadata?.markups;
+    let markups = ready_markups || current_markups;
 
-    if (!ready_markups &&
-        content !== entity.content &&
-        entity.additional_metadata?.markups &&
-        entity.additional_metadata.markups.length > 1) {
+    if (!ready_markups && content !== entity.content &&
+        current_markups && current_markups.length > 1) {
 
       const diff = patienceDiff(entity.content, content).lines;
+      markups = [[]];
 
       for (const markup of entity.additional_metadata.markups) {
         if (!markup.length || markup[0].length !== 2) {
@@ -444,16 +465,17 @@ const Entities = ({
           }
         }
 
-        if (startOffset < endOffset) {
-          console.log("=== Markup was moved");
+        // Markup must be not empty and have at least one letter char
+        if (startOffset < endOffset &&
+            /\w/.test(content.slice(startOffset, endOffset))) {
           markups.push([[startOffset, endOffset], ...groupIds]);
+          window.logger.suc(getTranslation("Markup was moved"));
 
         } else if (groupIds.length > 0) {
-          console.log("=== Markup with groups were deleted");
           deleteMarkupGroup({ variables: { groupIds, perspectiveId } });
 
         } else {
-          console.log("=== Markup was deleted");
+          window.logger.warn(getTranslation("Markup was deleted"));
         }
       }
     }

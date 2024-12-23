@@ -51,7 +51,10 @@ const TextEntityContent = ({
 
   const client = useApolloClient();
   const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation, {
-    onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)
+    onCompleted: data => {
+      refetchLexicalEntries(data.delete_markup_group.entry_ids, client);
+      window.logger.suc(getTranslation("Markup(s) with related groups were removed"));
+    }
   });
 
   const getTranslation = useContext(TranslationContext);
@@ -220,6 +223,12 @@ const TextEntityContent = ({
       });
     } else {
       update(entity, undefined, result);
+
+      if (action === "create_markup") {
+        window.logger.suc(getTranslation("Markup was created"));
+      } else if (action === "delete_markup") {
+        window.logger.suc(getTranslation("Markup was deleted"));
+      }
     }
     setBrowserSelection(null);
   };
@@ -390,7 +399,7 @@ const TextEntityContent = ({
               {marking.action === "create_markup" && (
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_create"
-                  content="M"
+                  content="+M"
                   title={getTranslation("Create markup")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}
@@ -399,7 +408,7 @@ const TextEntityContent = ({
               {marking.action === "delete_markup" && (
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_delete"
-                  content="M"
+                  content="-M"
                   title={getTranslation("Delete markup(s)")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}
@@ -408,7 +417,7 @@ const TextEntityContent = ({
               {marking.action === "delete_with_group" && (
                 <Button
                   className="lingvo-button-markup lingvo-button-markup_delete"
-                  content="G"
+                  content="-G"
                   title={getTranslation("Delete markup(s) with related groups")}
                   onClick={onMarkupAction}
                   disabled={is_being_updated}

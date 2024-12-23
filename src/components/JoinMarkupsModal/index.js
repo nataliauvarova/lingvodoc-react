@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { Button, Checkbox, Form, Modal, Table, Message, Icon } from "semantic-ui-react";
+import { Button, Checkbox, Select, Modal, Table, Message, Icon, Confirm } from "semantic-ui-react";
 import { isEqual } from "lodash";
 import PropTypes from "prop-types";
 import { useMutation } from "hooks";
@@ -53,6 +53,17 @@ export const deleteMarkupGroupMutation = gql`
   }
 `;
 
+const saveMarkupGroupsMutation = gql`
+  mutation saveMarkupGroups($perspectiveId: LingvodocID!, $fieldList: [ObjectVal]!, $groupList: [ObjectVal]!) {
+    save_markup_groups(perspective_id: $perspectiveId, field_list: $fieldList, group_list: $groupList) {
+      xlsx_url
+      message
+      triumph
+    }
+  }
+`;
+
+
 export const refetchLexicalEntries = (entry_ids, client) =>
   entry_ids.forEach(le_id =>
     client.query({
@@ -82,6 +93,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
   const [warnMessage, setWarnMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
 
   const client = useApolloClient();
 
@@ -91,6 +103,19 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   const [deleteMarkupGroup] = useMutation(deleteMarkupGroupMutation, {
     onCompleted: data => refetchLexicalEntries(data.delete_markup_group.entry_ids, client)
+  });
+
+  const [saveMarkupGroups] = useMutation(saveMarkupGroupsMutation, {
+    onCompleted: ({save_markup_groups: result}) => {
+      if (result.triumph) {
+        setSuccessMessage(
+          `${getTranslation("Markup groups were saved into xlsx file.")}
+          ${getTranslation("Follow")} <a href=${result.xlsx_url}>${getTranslation("result url")}</a>`
+        );
+      } else {
+        setWarnMessage(getTranslation(result.message));
+      }
+    }
   });
 
   const resetMessages = () => {
@@ -122,9 +147,9 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
         if (!(g_id in groupDict)) {
           groupDict[g_id] = { ...group_data, markups: [] };
         }
-        groupDict[g_id]["markups"].push(markup_data);
+        groupDict[g_id].markups.push(markup_data);
 
-        if (groupDict[g_id]["markups"].length === 2) {
+        if (groupDict[g_id].markups.length === 2) {
           total++;
         }
       }
@@ -132,7 +157,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
     if (Object.keys(markupDict).length < 2) {
       onClose();
-      throw new Error("Please set markups in both fields of the table");
+      window.logger.warn(getTranslation("Please set markups in both fields of the table"));
     }
 
     setMarkupDict(markupDict);
@@ -154,9 +179,9 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     }
 
     for (const group of Object.values(groupDict)) {
-      const ids = group["markups"].map(markup => markup.id);
+      const ids = group.markups.map(markup => markup.id);
       if (ids.includes(firstTextRelation) && ids.includes(secondTextRelation) && group.type === typeRelation) {
-        setWarnMessage("Such group already exists.");
+        window.logger.warn(getTranslation("Such group already exists."));
         return;
       }
     }
@@ -173,7 +198,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSecondTextRelation(null);
     setTypeRelation(null);
 
-    setSuccessMessage("The group was successfully added.");
+    window.logger.suc(getTranslation("The group was successfully added."));
   }, [firstTextRelation, secondTextRelation, typeRelation, groupDict]);
 
   const onDeleteRelation = useCallback(() => {
@@ -194,7 +219,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSelectedRelations([]);
     setSelectedTotal(0);
 
-    setSuccessMessage("The group was successfully deleted.");
+    window.logger.suc(getTranslation("The group was successfully deleted."));
   }, [groupDict, selectedRelations]);
 
   const onRelationSelect = (relation_id, checked) => {
@@ -213,6 +238,22 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
     setSelectedTotal(selectedTotal);
   };
 
+  const onSaveXlsx = useCallback(() => {
+    const groupList = [];
+    const fieldList =
+      Object.keys(markupDict).map(id => id.split("_")[1]).concat([getTranslation('Type'), getTranslation('Author')]);
+
+    for (const group of Object.values(groupDict)) {
+      groupList.push({
+        text: group.markups.map(m => m.text),
+        type: getTranslation(group.type),
+        author: group.author_name,
+      });
+    }
+
+    saveMarkupGroups({variables: {perspectiveId, fieldList, groupList}});
+  }, [markupDict, groupDict]);
+
   if (Object.keys(markupDict) < 2) {
     return;
   }
@@ -222,6 +263,24 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
 
   const firstText = markupDict[firstField].map(m => (m.id === firstTextRelation ? m.text : ""));
   const secondText = markupDict[secondField].map(m => (m.id === secondTextRelation ? m.text : ""));
+
+  const group_type_list = [
+    "Transliteration",
+    "Transcription",
+    "Calque",
+    "Transposition",
+    "Descriptive translation",
+    "Similatory translation",
+    "Neologism",
+    "Semi-calque",
+    "Lexico-grammatical replacement",
+    "Antonymous",
+    "Compensation"
+  ].sort().map((t, k) => ({
+    key: k,
+    value: t,
+    text: getTranslation(t)
+  }));
 
   return (
     <Modal className="lingvo-modal2" dimmer open closeIcon onClose={onClose} size="fullscreen">
@@ -298,46 +357,18 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                   </Table>
                 </div>
                 <div className="block-add-relation__actions">
-                  {/*<Form>
-                  {statistics.map(stat => (
-                    <Form.Radio
-                      key={stat.user_id}
-                      label={stat.name}
-                      value={stat.user_id}
-                      checked={user_id === stat.user_id}
-                      onChange={this.handleUserSelected}
-                      className="lingvo-radio"
-                    />
-                  ))}
-                </Form>*/}
-                  <Form>
-                    <Form.Radio
-                      label={getTranslation("Translit")}
-                      name="radioGroup"
-                      key="Translit"
-                      value="Translit"
-                      checked={typeRelation === "Translit"}
-                      onChange={(e, { value }) => {
-                        setTypeRelation(value);
-                        resetMessages();
-                      }}
-                      className="lingvo-radio"
-                    />
-
-                    <Form.Radio
-                      label={getTranslation("Literal translation")}
-                      name="radioGroup"
-                      key="LiteralTranslation"
-                      value="LiteralTranslation"
-                      checked={typeRelation === "LiteralTranslation"}
-                      onChange={(e, { value }) => {
-                        setTypeRelation(value);
-                        resetMessages();
-                      }}
-                      className="lingvo-radio"
-                    />
-                  </Form>
-
+                  <Select
+                    fluid
+                    placeholder={getTranslation("Please select type...")}
+                    value={typeRelation}
+                    search
+                    options={group_type_list}
+                    onChange={(e, { value }) => {
+                      setTypeRelation(value);
+                      resetMessages();
+                    }}
+                  />
+                  <p/>
                   <Button
                     content={getTranslation("Join markups")}
                     onClick={onAddRelation}
@@ -352,13 +383,13 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
             {warnMessage && (
               <Message warning style={{ minHeight: "auto", marginTop: "0" }}>
                 <Message.Header>{getTranslation("Warning")}</Message.Header>
-                <p>{getTranslation(warnMessage)}</p>
+                <p>{warnMessage}</p>
               </Message>
             )}
             {successMessage && (
               <Message positive style={{ minHeight: "auto", marginTop: "0" }}>
                 <Message.Header>{getTranslation("Success")}</Message.Header>
-                <p>{getTranslation(successMessage)}</p>
+                <p dangerouslySetInnerHTML={{ __html: successMessage }}></p>
               </Message>
             )}
 
@@ -388,7 +419,7 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
                           </Table.Cell>
                           <Table.Cell> {groupDict[group_id].markups[0].text} </Table.Cell>
                           <Table.Cell> {groupDict[group_id].markups[1].text} </Table.Cell>
-                          <Table.Cell> {groupDict[group_id].type} </Table.Cell>
+                          <Table.Cell> {getTranslation(groupDict[group_id].type)} </Table.Cell>
                           <Table.Cell> {groupDict[group_id].author_name} </Table.Cell>
                         </Table.Row>
                       )
@@ -408,8 +439,23 @@ const JoinMarkupsModal = ({ perspectiveId, onClose }) => {
           disabled={!deleteActive}
           style={{ float: "left" }}
         />
+        <Button
+          content={getTranslation("Save to xlsx")}
+          onClick={onSaveXlsx}
+          className="lingvo-button-greenest"
+          disabled={!groupTotal}
+          style={{ float: "left" }}
+        />
         <Button content={getTranslation("Close")} onClick={onClose} className="lingvo-button-basic-black" />
       </Modal.Actions>
+      <Confirm
+        open={confirmation !== null}
+        header={getTranslation("Confirmation")}
+        content={confirmation ? confirmation.content : null}
+        onConfirm={confirmation ? confirmation.func : null}
+        onCancel={() => setConfirmation(null)}
+        className="lingvo-confirm"
+      />
     </Modal>
   );
 };
